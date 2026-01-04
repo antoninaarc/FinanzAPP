@@ -53,6 +53,13 @@ struct HomeView: View {
             }
             .navigationTitle("💰 FinanzApp")
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    NavigationLink(destination: ChartsView(store: store)) {
+                        Image(systemName: "chart.pie.fill")
+                            .font(.title2)
+                    }
+                }
+                
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
                         showingAddTransaction = true

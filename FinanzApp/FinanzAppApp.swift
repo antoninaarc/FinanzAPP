@@ -4,7 +4,6 @@ import SwiftUI
 struct FinanzAppApp: App {
     var body: some Scene {
         WindowGroup {
-            HomeView()
-        }
+            HomeView()        }
     }
 }

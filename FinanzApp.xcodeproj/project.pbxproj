@@ -18,6 +18,8 @@
 		3EAB1EC32F0A9AB7009B589B /* TransactionRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EAB1EC22F0A9AB7009B589B /* TransactionRow.swift */; };
 		3EAB1EC52F0A9AEA009B589B /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EAB1EC42F0A9AEA009B589B /* HomeView.swift */; };
 		3EAB1EC72F0A9B67009B589B /* AddTransactionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EAB1EC62F0A9B67009B589B /* AddTransactionView.swift */; };
+		3EAB1EC92F0AD1ED009B589B /* ChartsViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EAB1EC82F0AD1ED009B589B /* ChartsViews.swift */; };
+		3EAB1ECC2F0ADA48009B589B /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EAB1ECB2F0ADA48009B589B /* MainTabView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -33,6 +35,8 @@
 		3EAB1EC22F0A9AB7009B589B /* TransactionRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionRow.swift; sourceTree = "<group>"; };
 		3EAB1EC42F0A9AEA009B589B /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		3EAB1EC62F0A9B67009B589B /* AddTransactionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddTransactionView.swift; sourceTree = "<group>"; };
+		3EAB1EC82F0AD1ED009B589B /* ChartsViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartsViews.swift; sourceTree = "<group>"; };
+		3EAB1ECB2F0ADA48009B589B /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -103,10 +107,12 @@
 		3EAB1EBC2F0A977B009B589B /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				3EAB1ECA2F0ADA05009B589B /* Main */,
 				3EAB1EBF2F0A9A2A009B589B /* Components */,
 				3EAB1EA92F0A8F33009B589B /* ContentView.swift */,
 				3EAB1EC42F0A9AEA009B589B /* HomeView.swift */,
 				3EAB1EC62F0A9B67009B589B /* AddTransactionView.swift */,
+				3EAB1EC82F0AD1ED009B589B /* ChartsViews.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -118,6 +124,14 @@
 				3EAB1EC22F0A9AB7009B589B /* TransactionRow.swift */,
 			);
 			path = Components;
+			sourceTree = "<group>";
+		};
+		3EAB1ECA2F0ADA05009B589B /* Main */ = {
+			isa = PBXGroup;
+			children = (
+				3EAB1ECB2F0ADA48009B589B /* MainTabView.swift */,
+			);
+			path = Main;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -195,10 +209,12 @@
 				3EAB1EB82F0A93EE009B589B /* Transation.swift in Sources */,
 				3EAB1EBE2F0A994E009B589B /* TransactionStore.swift in Sources */,
 				3EAB1EAA2F0A8F33009B589B /* ContentView.swift in Sources */,
+				3EAB1ECC2F0ADA48009B589B /* MainTabView.swift in Sources */,
 				3EAB1EC32F0A9AB7009B589B /* TransactionRow.swift in Sources */,
 				3EAB1EC52F0A9AEA009B589B /* HomeView.swift in Sources */,
 				3EAB1EA82F0A8F33009B589B /* FinanzAppApp.swift in Sources */,
 				3EAB1EBB2F0A966D009B589B /* Category.swift in Sources */,
+				3EAB1EC92F0AD1ED009B589B /* ChartsViews.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
