@@ -15,12 +15,15 @@ struct AddTransactionView: View {
     @State private var showingImagePicker = false
     @State private var selectedImage: UIImage?
     
+    // BTW
+    @State private var selectedBTWRate: Double? = nil
+    @State private var showBTWCalculation = false
+    
     var body: some View {
         NavigationView {
             Form {
                 Section {
                     VStack(spacing: 12) {
-                        // Botón Escanear
                         Button(action: {
                             showingScanner = true
                         }) {
@@ -38,7 +41,6 @@ struct AddTransactionView: View {
                         }
                         .buttonStyle(PlainButtonStyle())
                         
-                        // Botón Galería
                         Button(action: {
                             showingImagePicker = true
                         }) {
@@ -80,6 +82,94 @@ struct AddTransactionView: View {
                         Text("€")
                         TextField("0.00", text: $amount)
                             .keyboardType(.decimalPad)
+                    }
+                }
+                
+                // BTW Section (solo para modo ZZP)
+                if store.userMode == .zzp {
+                    Section("BTW (IVA)") {
+                        HStack(spacing: 12) {
+                            Button(action: {
+                                selectedBTWRate = 0.21
+                                showBTWCalculation = true
+                            }) {
+                                Text("21%")
+                                    .fontWeight(selectedBTWRate == 0.21 ? .bold : .regular)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 12)
+                                    .background(selectedBTWRate == 0.21 ? Color.green : Color.gray.opacity(0.2))
+                                    .foregroundColor(selectedBTWRate == 0.21 ? .white : .primary)
+                                    .cornerRadius(8)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            
+                            Button(action: {
+                                selectedBTWRate = 0.09
+                                showBTWCalculation = true
+                            }) {
+                                Text("9% Laag")
+                                    .fontWeight(selectedBTWRate == 0.09 ? .bold : .regular)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 12)
+                                    .background(selectedBTWRate == 0.09 ? Color.green : Color.gray.opacity(0.2))
+                                    .foregroundColor(selectedBTWRate == 0.09 ? .white : .primary)
+                                    .cornerRadius(8)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            
+                            Button(action: {
+                                selectedBTWRate = 0.0
+                                showBTWCalculation = false
+                            }) {
+                                Text("0% Vrij")
+                                    .fontWeight(selectedBTWRate == 0.0 ? .bold : .regular)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 12)
+                                    .background(selectedBTWRate == 0.0 ? Color.green : Color.gray.opacity(0.2))
+                                    .foregroundColor(selectedBTWRate == 0.0 ? .white : .primary)
+                                    .cornerRadius(8)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                        
+                        if showBTWCalculation, let rate = selectedBTWRate, rate > 0 {
+                            if let amountValue = Double(amount.replacingOccurrences(of: ",", with: ".")) {
+                                let baseAmount = amountValue / (1 + rate)
+                                let btwAmount = amountValue - baseAmount
+                                
+                                VStack(spacing: 8) {
+                                    HStack {
+                                        Text("Bedrag excl. BTW")
+                                            .foregroundColor(.secondary)
+                                        Spacer()
+                                        Text("€\(baseAmount, specifier: "%.2f")")
+                                            .fontWeight(.semibold)
+                                    }
+                                    
+                                    HStack {
+                                        Text("BTW (\(Int(rate * 100))%)")
+                                            .foregroundColor(.secondary)
+                                        Spacer()
+                                        Text("€\(btwAmount, specifier: "%.2f")")
+                                            .fontWeight(.semibold)
+                                            .foregroundColor(.green)
+                                    }
+                                    
+                                    Divider()
+                                    
+                                    HStack {
+                                        Text("Totaal incl. BTW")
+                                            .fontWeight(.bold)
+                                        Spacer()
+                                        Text("€\(amountValue, specifier: "%.2f")")
+                                            .fontWeight(.bold)
+                                    }
+                                }
+                                .padding()
+                                .background(Color(uiColor: .secondarySystemBackground))
+                                .cornerRadius(8)
+                            }
+                        }
                     }
                 }
                 
@@ -143,7 +233,8 @@ struct AddTransactionView: View {
             category: selectedCategory.name,
             type: selectedType,
             note: note,
-            date: date
+            date: date,
+            btwRate: selectedBTWRate
         )
         
         store.addTransaction(transaction)

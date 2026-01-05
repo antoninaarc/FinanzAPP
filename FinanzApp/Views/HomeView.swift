@@ -5,6 +5,7 @@ struct HomeView: View {
     @State private var showingAddTransaction = false
     @State private var selectedPeriod: FilterPeriod = .all
     @State private var weeklyBudget: Double = 500.0
+    @State private var showingSettings = false
     
     var body: some View {
         NavigationView {
@@ -12,6 +13,17 @@ struct HomeView: View {
                 VStack(spacing: 20) {
                     // Filtro
                     FilterView(selectedPeriod: $selectedPeriod)
+                    
+                    // BTW Vault Card (solo para modo ZZP)
+                    if store.userMode == .zzp {
+                        BTWVaultCard(
+                            collected: store.totalBTWCollected,
+                            expected: store.totalBTWCollected * 1.2,
+                            daysUntil: store.daysUntilBTWDeadline(),
+                            deadline: store.nextBTWDeadline()
+                        )
+                        .padding(.horizontal)
+                    }
                     
                     // Budget Card
                     if selectedPeriod == .week {
@@ -68,9 +80,18 @@ struct HomeView: View {
             .navigationTitle("💰 FinanzApp")
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    NavigationLink(destination: ChartsView(store: store)) {
-                        Image(systemName: "chart.pie.fill")
-                            .font(.title2)
+                    HStack(spacing: 12) {
+                        NavigationLink(destination: ChartsView(store: store)) {
+                            Image(systemName: "chart.pie.fill")
+                                .font(.title2)
+                        }
+                        
+                        Button(action: {
+                            showingSettings = true
+                        }) {
+                            Image(systemName: "gearshape.fill")
+                                .font(.title2)
+                        }
                     }
                 }
                 
@@ -85,6 +106,9 @@ struct HomeView: View {
             }
             .sheet(isPresented: $showingAddTransaction) {
                 AddTransactionView(store: store)
+            }
+            .sheet(isPresented: $showingSettings) {
+                SettingsView(store: store)
             }
             .onAppear {
                 store.loadTransactions()
