@@ -83,50 +83,50 @@ class ReceiptParser {
         return nil
     }
     
-    // MARK: - Extract Amount
+    // MARK: - Extract Amount (FLEXIBLE)
     private static func extractAmount(from lines: [String]) -> Double? {
-        // Priority 1: TE BETALEN (most important - final amount to pay)
+        // Look for keywords - remove ALL spaces to be flexible
         for line in lines.reversed() {
-            let lower = line.lowercased().replacingOccurrences(of: " ", with: "")
-            if lower.contains("tebetalen") || lower.contains("apagar") {
-                if let amount = extractNumber(from: line), amount < 500 {
+            let cleaned = line.lowercased().replacingOccurrences(of: " ", with: "")
+            
+            // Check multiple variations
+            if cleaned.contains("tebetalen") ||
+               cleaned.contains("betalen") ||
+               cleaned.contains("apagar") {
+                if let amount = extractNumberFromLine(line) {
                     return amount
                 }
             }
         }
         
-        // Priority 2: TOTAAL (but not SUBTOTAAL)
+        // Try TOTAAL
         for line in lines.reversed() {
-            let lower = line.lowercased()
-            if lower.contains("totaal") && !lower.contains("subtotaal") {
-                if let amount = extractNumber(from: line), amount < 500 {
+            let cleaned = line.lowercased().replacingOccurrences(of: " ", with: "")
+            if cleaned.contains("totaal") && !cleaned.contains("subtotaal") {
+                if let amount = extractNumberFromLine(line) {
                     return amount
                 }
             }
         }
         
-        // Priority 3: TOTAL
+        // Try TOTAL
         for line in lines.reversed() {
-            let lower = line.lowercased()
-            if lower.contains("total") && !lower.contains("subtotal") {
-                if let amount = extractNumber(from: line), amount < 500 {
+            let cleaned = line.lowercased().replacingOccurrences(of: " ", with: "")
+            if cleaned.contains("total") && !cleaned.contains("subtotal") {
+                if let amount = extractNumberFromLine(line) {
                     return amount
                 }
             }
         }
         
-        // Fallback: reasonable numbers only
-        let amounts = lines.compactMap { extractNumber(from: $0) }
-        let filtered = amounts.filter { $0 > 0.50 && $0 < 200 }
-        return filtered.max()
+        return nil
     }
     
-    // MARK: - Extract Number
-    private static func extractNumber(from text: String) -> Double? {
-        var cleaned = text
+    // MARK: - Extract Number from Line
+    private static func extractNumberFromLine(_ line: String) -> Double? {
+        var cleaned = line
             .replacingOccurrences(of: "€", with: "")
             .replacingOccurrences(of: "EUR", with: "")
-            .trimmingCharacters(in: .whitespaces)
         
         // Handle European format
         if cleaned.contains(",") && !cleaned.contains(".") {
@@ -136,17 +136,21 @@ class ReceiptParser {
             cleaned = cleaned.replacingOccurrences(of: ",", with: ".")
         }
         
-        // Extract all numbers
+        // Find all numbers
         let pattern = "[0-9]+\\.?[0-9]{0,2}"
-        if let regex = try? NSRegularExpression(pattern: pattern) {
-            let range = NSRange(cleaned.startIndex..., in: cleaned)
-            let matches = regex.matches(in: cleaned, range: range)
-            
-            // Get last number (usually the amount)
-            if let lastMatch = matches.last {
-                if let swiftRange = Range(lastMatch.range, in: cleaned) {
-                    let numString = String(cleaned[swiftRange])
-                    return Double(numString)
+        guard let regex = try? NSRegularExpression(pattern: pattern) else {
+            return nil
+        }
+        
+        let range = NSRange(cleaned.startIndex..., in: cleaned)
+        let matches = regex.matches(in: cleaned, range: range)
+        
+        // Get last number (usually the amount)
+        if let lastMatch = matches.last {
+            if let swiftRange = Range(lastMatch.range, in: cleaned) {
+                let numString = String(cleaned[swiftRange])
+                if let num = Double(numString), num >= 0.01 {
+                    return num
                 }
             }
         }
@@ -156,7 +160,6 @@ class ReceiptParser {
     
     // MARK: - Detect BTW Rate
     private static func detectBTWRate(from lines: [String]) -> Double? {
-        // Count B markers
         var bCount = 0
         for line in lines {
             if line.hasSuffix(" B") || line.hasSuffix("B") || line.contains(" B ") {

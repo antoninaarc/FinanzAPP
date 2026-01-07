@@ -34,7 +34,6 @@ struct AddTransactionView: View {
             Form {
                 scannerSection
                 
-                // Receipt Summary Card (shows after scanning)
                 if showReceiptSummary, let total = scannedTotal {
                     Section {
                         ReceiptSummaryCard(total: total, vatRate: scannedVATRate)
@@ -91,69 +90,57 @@ struct AddTransactionView: View {
         }
     }
     
-    // MARK: - Scanner Section
     private var scannerSection: some View {
         Section {
             VStack(spacing: 12) {
-                scanCameraButton
-                selectGalleryButton
+                Button(action: {
+                    if DocumentScannerView.isAvailable {
+                        showingScanner = true
+                    } else {
+                        showingCameraUnavailableAlert = true
+                    }
+                }) {
+                    HStack {
+                        Image(systemName: "doc.text.viewfinder")
+                            .font(.title2)
+                        Text("Scan with Camera")
+                            .fontWeight(.semibold)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.blue)
+                    .foregroundColor(.white)
+                    .cornerRadius(12)
+                }
+                .buttonStyle(PlainButtonStyle())
+                
+                Button(action: { showingImagePicker = true }) {
+                    HStack {
+                        Image(systemName: "photo.on.rectangle")
+                            .font(.title2)
+                        Text("Select from Gallery")
+                            .fontWeight(.semibold)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.green)
+                    .foregroundColor(.white)
+                    .cornerRadius(12)
+                }
+                .buttonStyle(PlainButtonStyle())
+                
                 if isProcessing {
-                    processingIndicator
+                    HStack {
+                        ProgressView()
+                        Text("Processing receipt...")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
                 }
             }
         }
     }
     
-    private var scanCameraButton: some View {
-        Button(action: {
-            if DocumentScannerView.isAvailable {
-                showingScanner = true
-            } else {
-                showingCameraUnavailableAlert = true
-            }
-        }) {
-            HStack {
-                Image(systemName: "doc.text.viewfinder")
-                    .font(.title2)
-                Text("Scan with Camera")
-                    .fontWeight(.semibold)
-            }
-            .frame(maxWidth: .infinity)
-            .padding()
-            .background(Color.blue)
-            .foregroundColor(.white)
-            .cornerRadius(12)
-        }
-        .buttonStyle(PlainButtonStyle())
-    }
-    
-    private var selectGalleryButton: some View {
-        Button(action: { showingImagePicker = true }) {
-            HStack {
-                Image(systemName: "photo.on.rectangle")
-                    .font(.title2)
-                Text("Select from Gallery")
-                    .fontWeight(.semibold)
-            }
-            .frame(maxWidth: .infinity)
-            .padding()
-            .background(Color.green)
-            .foregroundColor(.white)
-            .cornerRadius(12)
-        }
-        .buttonStyle(PlainButtonStyle())
-    }
-    
-    private var processingIndicator: some View {
-        HStack {
-            ProgressView()
-            Text("Processing receipt...")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-        }
-    }
-    
-    // MARK: - Type Section
     private var typeSection: some View {
         Section("Type") {
             Picker("Type", selection: $selectedType) {
@@ -164,7 +151,6 @@ struct AddTransactionView: View {
         }
     }
     
-    // MARK: - Amount Section
     private var amountSection: some View {
         Section("Amount") {
             HStack {
@@ -175,21 +161,49 @@ struct AddTransactionView: View {
         }
     }
     
-    // MARK: - BTW Section
     private var btwSection: some View {
         Section("VAT (BTW)") {
-            btwButtons
-            if showBTWCalculation, let rate = selectedBTWRate, rate > 0 {
-                btwCalculation(rate: rate)
+            HStack(spacing: 12) {
+                btwButton(rate: 0.21, label: "21%")
+                btwButton(rate: 0.09, label: "9%")
+                btwButton(rate: 0.0, label: "0%")
             }
-        }
-    }
-    
-    private var btwButtons: some View {
-        HStack(spacing: 12) {
-            btwButton(rate: 0.21, label: "21%")
-            btwButton(rate: 0.09, label: "9% Low")
-            btwButton(rate: 0.0, label: "0% Free")
+            
+            if showBTWCalculation, let rate = selectedBTWRate, rate > 0 {
+                if let amountValue = Double(amount.replacingOccurrences(of: ",", with: ".")) {
+                    let baseAmount = amountValue / (1 + rate)
+                    let btwAmount = amountValue - baseAmount
+                    
+                    VStack(spacing: 8) {
+                        HStack {
+                            Text("Amount excl. VAT")
+                                .foregroundColor(.secondary)
+                            Spacer()
+                            Text("€\(baseAmount, specifier: "%.2f")")
+                                .fontWeight(.semibold)
+                        }
+                        HStack {
+                            Text("VAT (\(Int(rate * 100))%)")
+                                .foregroundColor(.secondary)
+                            Spacer()
+                            Text("€\(btwAmount, specifier: "%.2f")")
+                                .fontWeight(.semibold)
+                                .foregroundColor(.green)
+                        }
+                        Divider()
+                        HStack {
+                            Text("Total incl. VAT")
+                                .fontWeight(.bold)
+                            Spacer()
+                            Text("€\(amountValue, specifier: "%.2f")")
+                                .fontWeight(.bold)
+                        }
+                    }
+                    .padding()
+                    .background(Color(uiColor: .secondarySystemBackground))
+                    .cornerRadius(8)
+                }
+            }
         }
     }
     
@@ -209,52 +223,23 @@ struct AddTransactionView: View {
         .buttonStyle(PlainButtonStyle())
     }
     
-    private func btwCalculation(rate: Double) -> some View {
-        Group {
-            if let amountValue = Double(amount.replacingOccurrences(of: ",", with: ".")) {
-                let baseAmount = amountValue / (1 + rate)
-                let btwAmount = amountValue - baseAmount
-                
-                VStack(spacing: 8) {
-                    HStack {
-                        Text("Amount excl. VAT")
-                            .foregroundColor(.secondary)
-                        Spacer()
-                        Text("€\(baseAmount, specifier: "%.2f")")
-                            .fontWeight(.semibold)
-                    }
-                    HStack {
-                        Text("VAT (\(Int(rate * 100))%)")
-                            .foregroundColor(.secondary)
-                        Spacer()
-                        Text("€\(btwAmount, specifier: "%.2f")")
-                            .fontWeight(.semibold)
-                            .foregroundColor(.green)
-                    }
-                    Divider()
-                    HStack {
-                        Text("Total incl. VAT")
-                            .fontWeight(.bold)
-                        Spacer()
-                        Text("€\(amountValue, specifier: "%.2f")")
-                            .fontWeight(.bold)
-                    }
-                }
-                .padding()
-                .background(Color(uiColor: .secondarySystemBackground))
-                .cornerRadius(8)
-            }
-        }
-    }
-    
-    // MARK: - Category Section
     private var categorySection: some View {
         Section("Category") {
             Picker("Category", selection: $selectedCategory) {
                 ForEach(availableCategories.filter { $0.parentID == nil }) { parentCategory in
-                    categoryRow(for: parentCategory)
+                    HStack {
+                        Text(parentCategory.emoji)
+                        Text(parentCategory.name)
+                    }
+                    .tag(parentCategory)
+                    
                     ForEach(store.getSubcategories(for: parentCategory.id)) { subcategory in
-                        subcategoryRow(for: subcategory)
+                        HStack {
+                            Text("  ")
+                            Text(subcategory.emoji)
+                            Text(subcategory.name)
+                        }
+                        .tag(subcategory)
                     }
                 }
             }
@@ -262,24 +247,6 @@ struct AddTransactionView: View {
         }
     }
     
-    private func categoryRow(for category: Category) -> some View {
-        HStack {
-            Text(category.emoji)
-            Text(category.name)
-        }
-        .tag(category)
-    }
-    
-    private func subcategoryRow(for category: Category) -> some View {
-        HStack {
-            Text("  ")
-            Text(category.emoji)
-            Text(category.name)
-        }
-        .tag(category)
-    }
-    
-    // MARK: - Details Section
     private var detailsSection: some View {
         Section("Details") {
             TextField("Note (optional)", text: $note)
@@ -287,7 +254,6 @@ struct AddTransactionView: View {
         }
     }
     
-    // MARK: - Actions
     private func saveTransaction() {
         guard let amountValue = Double(amount.replacingOccurrences(of: ",", with: ".")) else { return }
         
@@ -310,37 +276,30 @@ struct AddTransactionView: View {
         ReceiptParser.parseReceipt(from: image) { parsed in
             isProcessing = false
             
-            // Set total amount
             if let total = parsed.amount {
                 self.amount = String(format: "%.2f", total)
                 self.scannedTotal = total
             }
             
-            // Set detected VAT rate
             if let rate = parsed.detectedBTWRate {
                 self.selectedBTWRate = rate
                 self.showBTWCalculation = rate > 0
                 self.scannedVATRate = rate
             }
             
-            // Show receipt summary
             if parsed.amount != nil {
                 self.showReceiptSummary = true
             }
             
-            // Set date
             if let parsedDate = parsed.date {
                 self.date = parsedDate
             }
             
-            // Set merchant as note
             if let merchant = parsed.merchant {
                 self.note = merchant
             }
             
-            // Auto-detect category
             let merchantLower = (parsed.merchant ?? "").lowercased()
-            
             if merchantLower.contains("albert heijn") || merchantLower.contains("jumbo") ||
                merchantLower.contains("lidl") || merchantLower.contains("aldi") {
                 if let foodCategory = availableCategories.first(where: { $0.name == "Food" }) {
@@ -348,11 +307,5 @@ struct AddTransactionView: View {
                 }
             }
         }
-    }
-}
-
-struct AddTransactionView_Previews: PreviewProvider {
-    static var previews: some View {
-        AddTransactionView(store: TransactionStore())
     }
 }
