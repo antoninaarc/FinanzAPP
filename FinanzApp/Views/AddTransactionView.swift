@@ -30,7 +30,7 @@ struct AddTransactionView: View {
                             HStack {
                                 Image(systemName: "doc.text.viewfinder")
                                     .font(.title2)
-                                Text("Escanear con Cámara")
+                                Text("Scan with Camera")
                                     .fontWeight(.semibold)
                             }
                             .frame(maxWidth: .infinity)
@@ -47,7 +47,7 @@ struct AddTransactionView: View {
                             HStack {
                                 Image(systemName: "photo.on.rectangle")
                                     .font(.title2)
-                                Text("Seleccionar de Galería")
+                                Text("Select from Gallery")
                                     .fontWeight(.semibold)
                             }
                             .frame(maxWidth: .infinity)
@@ -61,7 +61,7 @@ struct AddTransactionView: View {
                         if isProcessing {
                             HStack {
                                 ProgressView()
-                                Text("Procesando...")
+                                Text("Processing...")
                                     .font(.subheadline)
                                     .foregroundColor(.secondary)
                             }
@@ -69,15 +69,15 @@ struct AddTransactionView: View {
                     }
                 }
                 
-                Section("Tipo") {
-                    Picker("Tipo", selection: $selectedType) {
-                        Text("Gasto").tag(TransactionType.expense)
-                        Text("Ingreso").tag(TransactionType.income)
+                Section("Type") {
+                    Picker("Type", selection: $selectedType) {
+                        Text("Expense").tag(TransactionType.expense)
+                        Text("Income").tag(TransactionType.income)
                     }
                     .pickerStyle(.segmented)
                 }
                 
-                Section("Cantidad") {
+                Section("Amount") {
                     HStack {
                         Text("€")
                         TextField("0.00", text: $amount)
@@ -85,9 +85,9 @@ struct AddTransactionView: View {
                     }
                 }
                 
-                // BTW Section (solo para modo ZZP)
+                // BTW Section (ZZP mode only)
                 if store.userMode == .zzp {
-                    Section("BTW (IVA)") {
+                    Section("VAT (BTW)") {
                         HStack(spacing: 12) {
                             Button(action: {
                                 selectedBTWRate = 0.21
@@ -107,7 +107,7 @@ struct AddTransactionView: View {
                                 selectedBTWRate = 0.09
                                 showBTWCalculation = true
                             }) {
-                                Text("9% Laag")
+                                Text("9% Low")
                                     .fontWeight(selectedBTWRate == 0.09 ? .bold : .regular)
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 12)
@@ -121,7 +121,7 @@ struct AddTransactionView: View {
                                 selectedBTWRate = 0.0
                                 showBTWCalculation = false
                             }) {
-                                Text("0% Vrij")
+                                Text("0% Free")
                                     .fontWeight(selectedBTWRate == 0.0 ? .bold : .regular)
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 12)
@@ -139,7 +139,7 @@ struct AddTransactionView: View {
                                 
                                 VStack(spacing: 8) {
                                     HStack {
-                                        Text("Bedrag excl. BTW")
+                                        Text("Amount excl. VAT")
                                             .foregroundColor(.secondary)
                                         Spacer()
                                         Text("€\(baseAmount, specifier: "%.2f")")
@@ -147,7 +147,7 @@ struct AddTransactionView: View {
                                     }
                                     
                                     HStack {
-                                        Text("BTW (\(Int(rate * 100))%)")
+                                        Text("VAT (\(Int(rate * 100))%)")
                                             .foregroundColor(.secondary)
                                         Spacer()
                                         Text("€\(btwAmount, specifier: "%.2f")")
@@ -158,7 +158,7 @@ struct AddTransactionView: View {
                                     Divider()
                                     
                                     HStack {
-                                        Text("Totaal incl. BTW")
+                                        Text("Total incl. VAT")
                                             .fontWeight(.bold)
                                         Spacer()
                                         Text("€\(amountValue, specifier: "%.2f")")
@@ -173,8 +173,8 @@ struct AddTransactionView: View {
                     }
                 }
                 
-                Section("Categoría") {
-                    Picker("Categoría", selection: $selectedCategory) {
+                Section("Category") {
+                    Picker("Category", selection: $selectedCategory) {
                         ForEach(Category.allCategories) { category in
                             HStack {
                                 Text(category.emoji)
@@ -185,22 +185,22 @@ struct AddTransactionView: View {
                     }
                 }
                 
-                Section("Detalles") {
-                    TextField("Nota (opcional)", text: $note)
-                    DatePicker("Fecha", selection: $date, displayedComponents: .date)
+                Section("Details") {
+                    TextField("Note (optional)", text: $note)
+                    DatePicker("Date", selection: $date, displayedComponents: .date)
                 }
             }
-            .navigationTitle("Nueva Transacción")
+            .navigationTitle("New Transaction")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancelar") {
+                    Button("Cancel") {
                         dismiss()
                     }
                 }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Guardar") {
+                    Button("Save") {
                         saveTransaction()
                     }
                     .disabled(amount.isEmpty)
@@ -261,10 +261,16 @@ struct AddTransactionView: View {
             
             let lowerText = parsed.fullText.lowercased()
             if lowerText.contains("mercadona") || lowerText.contains("carrefour") || lowerText.contains("lidl") {
-                if let foodCategory = Category.allCategories.first(where: { $0.name == "Comida" }) {
+                if let foodCategory = Category.allCategories.first(where: { $0.name == "Food" }) {
                     self.selectedCategory = foodCategory
                 }
             }
         }
+    }
+}
+
+struct AddTransactionView_Previews: PreviewProvider {
+    static var previews: some View {
+        AddTransactionView(store: TransactionStore())
     }
 }

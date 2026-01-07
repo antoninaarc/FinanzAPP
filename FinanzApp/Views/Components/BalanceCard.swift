@@ -8,7 +8,7 @@ struct BalanceCard: View {
     var body: some View {
         VStack(spacing: 16) {
             VStack(spacing: 4) {
-                Text("Balance Total")
+                Text("Total Balance")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                 
@@ -22,7 +22,7 @@ struct BalanceCard: View {
                     HStack {
                         Image(systemName: "arrow.up.circle.fill")
                             .foregroundColor(.green)
-                        Text("Ingresos")
+                        Text("Income")
                             .font(.subheadline)
                     }
                     Text("€\(income, specifier: "%.2f")")
@@ -34,7 +34,7 @@ struct BalanceCard: View {
                     HStack {
                         Image(systemName: "arrow.down.circle.fill")
                             .foregroundColor(.red)
-                        Text("Gastos")
+                        Text("Expenses")
                             .font(.subheadline)
                     }
                     Text("€\(expense, specifier: "%.2f")")
@@ -50,5 +50,15 @@ struct BalanceCard: View {
                 .fill(Color(uiColor: .systemBackground))
                 .shadow(color: .black.opacity(0.1), radius: 10)
         )
+    }
+}
+
+struct BalanceCard_Previews: PreviewProvider {
+    static var previews: some View {
+        VStack(spacing: 20) {
+            BalanceCard(balance: 450.50, income: 1200, expense: 749.50)
+            BalanceCard(balance: -120.00, income: 500, expense: 620)
+        }
+        .padding()
     }
 }

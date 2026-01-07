@@ -22,9 +22,9 @@ struct BTWVaultCard: View {
     }
     
     var statusText: String {
-        if progress >= 0.9 { return "Op schema!" }
-        if progress >= 0.7 { return "Goed bezig" }
-        return "Let op!"
+        if progress >= 0.9 { return "On track!" }
+        if progress >= 0.7 { return "Good job" }
+        return "Watch out!"
     }
     
     var body: some View {
@@ -35,11 +35,11 @@ struct BTWVaultCard: View {
                     HStack(spacing: 6) {
                         Text("💰")
                             .font(.title2)
-                        Text("BTW Spaarkluis")
+                        Text("VAT Savings Vault")
                             .font(.headline)
                     }
                     
-                    Text("Volgende BTW aangifte:")
+                    Text("Next VAT filing:")
                         .font(.caption)
                         .foregroundColor(.secondary)
                     
@@ -47,7 +47,7 @@ struct BTWVaultCard: View {
                         Text(deadline, style: .date)
                             .font(.caption)
                             .fontWeight(.semibold)
-                        Text("(\(daysUntil) dagen)")
+                        Text("(\(daysUntil) days)")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -84,7 +84,7 @@ struct BTWVaultCard: View {
             // Amounts
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Opgeslagen")
+                    Text("Saved")
                         .font(.caption)
                         .foregroundColor(.secondary)
                     Text("€\(collected, specifier: "%.2f")")
@@ -96,7 +96,7 @@ struct BTWVaultCard: View {
                 Spacer()
                 
                 VStack(alignment: .center, spacing: 4) {
-                    Text("Verwacht")
+                    Text("Expected")
                         .font(.caption)
                         .foregroundColor(.secondary)
                     Text("€\(expected, specifier: "%.2f")")
@@ -107,7 +107,7 @@ struct BTWVaultCard: View {
                 Spacer()
                 
                 VStack(alignment: .trailing, spacing: 4) {
-                    Text(shortage > 0 ? "Tekort" : "Extra")
+                    Text(shortage > 0 ? "Shortage" : "Extra")
                         .font(.caption)
                         .foregroundColor(shortage > 0 ? .red : .green)
                     Text("€\(abs(shortage), specifier: "%.2f")")
@@ -143,7 +143,7 @@ struct BTWVaultCard: View {
                 HStack(spacing: 8) {
                     Image(systemName: "info.circle.fill")
                         .foregroundColor(.orange)
-                    Text("Spaar €\(shortage / Double(max(1, daysUntil)), specifier: "%.2f") per dag om op tijd te zijn")
+                    Text("Save €\(shortage / Double(max(1, daysUntil)), specifier: "%.2f")/day to be on time")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -151,7 +151,7 @@ struct BTWVaultCard: View {
                 HStack(spacing: 8) {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundColor(.green)
-                    Text("Je hebt genoeg gespaard voor de volgende aangifte!")
+                    Text("You have saved enough for the next filing!")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -163,5 +163,26 @@ struct BTWVaultCard: View {
                 .fill(Color(uiColor: .secondarySystemBackground))
                 .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
         )
+    }
+}
+
+struct BTWVaultCard_Previews: PreviewProvider {
+    static var previews: some View {
+        VStack(spacing: 20) {
+            BTWVaultCard(
+                collected: 450,
+                expected: 500,
+                daysUntil: 15,
+                deadline: Date().addingTimeInterval(15 * 24 * 60 * 60)
+            )
+            
+            BTWVaultCard(
+                collected: 520,
+                expected: 500,
+                daysUntil: 15,
+                deadline: Date().addingTimeInterval(15 * 24 * 60 * 60)
+            )
+        }
+        .padding()
     }
 }

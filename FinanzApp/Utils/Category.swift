@@ -1,29 +1,62 @@
 import Foundation
 
-struct Category: Identifiable, Hashable {
-    let id = UUID()
+struct Category: Identifiable, Codable, Hashable {
+    let id: UUID
     let name: String
     let emoji: String
+    let parentID: UUID?
     
-    func hash(into hasher: inout Hasher) {
-        hasher.combine(name)
+    init(id: UUID = UUID(), name: String, emoji: String, parentID: UUID? = nil) {
+        self.id = id
+        self.name = name
+        self.emoji = emoji
+        self.parentID = parentID
     }
     
-    static func == (lhs: Category, rhs: Category) -> Bool {
-        lhs.name == rhs.name
-    }
-}
-
-extension Category {
-    static let allCategories = [
-        Category(name: "Comida", emoji: "🍔"),
-        Category(name: "Transporte", emoji: "🚗"),
-        Category(name: "Hogar", emoji: "🏠"),
-        Category(name: "Salud", emoji: "💊"),
-        Category(name: "Entretenimiento", emoji: "🎮"),
-        Category(name: "Salario", emoji: "💰"),
-        Category(name: "Educación", emoji: "📚"),
-        Category(name: "Compras", emoji: "🛍️"),
-        Category(name: "Otros", emoji: "✨")
+    // Available emojis for category selection
+    static let availableEmojis: [String] = [
+        // Finance & Money
+        "💰", "💵", "💴", "💶", "💷", "💳", "🏦", "💸", "📈", "📉",
+        // Food & Drink
+        "🍔", "🍕", "🍗", "🌮", "🍜", "🍱", "🍝", "🥗", "☕", "🍷",
+        // Transportation
+        "🚗", "🚕", "🚙", "🚌", "🚎", "🚐", "🚑", "✈️", "🚆", "⛽",
+        // Shopping & Retail
+        "🛒", "🛍️", "👕", "👗", "👔", "👠", "💄", "📱", "💻", "⌚",
+        // Home & Living
+        "🏠", "🏡", "🔑", "🛋️", "🛏️", "🚪", "🪟", "💡", "🔌", "🧹",
+        // Entertainment
+        "🎬", "🎮", "🎯", "🎲", "🎸", "🎹", "📚", "📖", "🎨", "🖼️",
+        // Health & Fitness
+        "💊", "🏥", "⚕️", "🩺", "💉", "🏋️", "🚴", "🧘", "🏃", "⚽",
+        // Education & Work
+        "📝", "✏️", "📊", "💼", "📋", "📌", "🖊️", "📎", "🗂️", "📁",
+        // Services & Utilities
+        "📞", "📧", "📮", "🔧", "🔨", "⚙️", "🛠️", "🔑", "💡", "🔋",
+        // Travel & Leisure
+        "🧳", "🗺️", "🏖️", "⛱️", "🏕️", "🎿", "🏂", "⛷️", "🚣", "🏊",
+        // Pets & Animals
+        "🐕", "🐈", "🐾", "🦴", "🐟", "🐦", "🐹", "🐰", "🐴", "🐄",
+        // Other
+        "🎁", "🎉", "🎊", "🎈", "🌟", "⭐", "❤️", "💙", "💚", "🔔"
     ]
+    
+    // Default categories (fallback if no custom categories)
+    static let defaultCategories: [Category] = [
+        Category(name: "Food", emoji: "🍔"),
+        Category(name: "Transport", emoji: "🚗"),
+        Category(name: "Shopping", emoji: "🛒"),
+        Category(name: "Entertainment", emoji: "🎬"),
+        Category(name: "Health", emoji: "💊"),
+        Category(name: "Home", emoji: "🏠"),
+        Category(name: "Education", emoji: "📚"),
+        Category(name: "Travel", emoji: "✈️"),
+        Category(name: "Utilities", emoji: "💡"),
+        Category(name: "Other", emoji: "📦")
+    ]
+    
+    // Helper to get all categories (for backwards compatibility)
+    static var allCategories: [Category] {
+        return defaultCategories
+    }
 }

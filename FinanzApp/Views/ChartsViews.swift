@@ -25,14 +25,14 @@ struct ChartsView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
-                Text("📊 Estadísticas")
+                Text("📊 Statistics")
                     .font(.largeTitle)
                     .fontWeight(.bold)
                     .padding(.top)
                 
                 if !expensesByCategory.isEmpty {
                     VStack(alignment: .leading, spacing: 16) {
-                        Text("Gastos por Categoría")
+                        Text("Expenses by Category")
                             .font(.title2)
                             .fontWeight(.bold)
                             .padding(.horizontal)
@@ -83,7 +83,7 @@ struct ChartsView: View {
                 }
                 
                 VStack(alignment: .leading, spacing: 16) {
-                    Text("Balance Mensual")
+                    Text("Monthly Balance")
                         .font(.title2)
                         .fontWeight(.bold)
                         .padding(.horizontal)
@@ -94,7 +94,7 @@ struct ChartsView: View {
                                 .font(.system(size: 40))
                                 .foregroundColor(.green)
                             
-                            Text("Ingresos")
+                            Text("Income")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                             
@@ -115,7 +115,7 @@ struct ChartsView: View {
                                 .font(.system(size: 40))
                                 .foregroundColor(.red)
                             
-                            Text("Gastos")
+                            Text("Expenses")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                             
@@ -139,10 +139,10 @@ struct ChartsView: View {
                         Image(systemName: "chart.bar")
                             .font(.system(size: 60))
                             .foregroundColor(.gray)
-                        Text("No hay datos suficientes")
+                        Text("Not enough data")
                             .font(.title3)
                             .foregroundColor(.gray)
-                        Text("Agrega algunas transacciones para ver estadísticas")
+                        Text("Add some transactions to see statistics")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
@@ -160,4 +160,10 @@ struct CategoryExpense: Identifiable {
     let category: String
     let amount: Double
     let emoji: String
+}
+
+struct ChartsView_Previews: PreviewProvider {
+    static var previews: some View {
+        ChartsView(store: TransactionStore())
+    }
 }

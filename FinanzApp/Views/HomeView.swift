@@ -11,10 +11,10 @@ struct HomeView: View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 20) {
-                    // Filtro
+                    // Filter
                     FilterView(selectedPeriod: $selectedPeriod)
                     
-                    // BTW Vault Card (solo para modo ZZP)
+                    // BTW Vault Card (ZZP mode only)
                     if store.userMode == .zzp {
                         BTWVaultCard(
                             collected: store.totalBTWCollected,
@@ -42,7 +42,7 @@ struct HomeView: View {
                     .padding(.horizontal)
                     
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("Transacciones Recientes")
+                        Text("Recent Transactions")
                             .font(.headline)
                             .padding(.horizontal)
                         
@@ -51,10 +51,10 @@ struct HomeView: View {
                                 Image(systemName: "tray")
                                     .font(.system(size: 60))
                                     .foregroundColor(.gray)
-                                Text("No hay transacciones")
+                                Text("No transactions")
                                     .font(.title3)
                                     .foregroundColor(.gray)
-                                Text("Toca el botón + para agregar una")
+                                Text("Tap the + button to add one")
                                     .font(.subheadline)
                                     .foregroundColor(.secondary)
                             }
@@ -68,7 +68,7 @@ struct HomeView: View {
                                         Button(role: .destructive) {
                                             store.deleteTransaction(transaction)
                                         } label: {
-                                            Label("Eliminar", systemImage: "trash")
+                                            Label("Delete", systemImage: "trash")
                                         }
                                     }
                             }
@@ -114,5 +114,11 @@ struct HomeView: View {
                 store.loadTransactions()
             }
         }
+    }
+}
+
+struct HomeView_Previews: PreviewProvider {
+    static var previews: some View {
+        HomeView()
     }
 }
