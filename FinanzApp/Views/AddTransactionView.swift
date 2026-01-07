@@ -16,6 +16,11 @@ struct AddTransactionView: View {
     @State private var selectedImage: UIImage?
     @State private var showingCameraUnavailableAlert = false
     
+    // Receipt summary
+    @State private var showReceiptSummary = false
+    @State private var scannedTotal: Double?
+    @State private var scannedVATRate: Double?
+    
     // BTW
     @State private var selectedBTWRate: Double? = nil
     @State private var showBTWCalculation = false
@@ -28,6 +33,14 @@ struct AddTransactionView: View {
         NavigationView {
             Form {
                 scannerSection
+                
+                // Receipt Summary Card (shows after scanning)
+                if showReceiptSummary, let total = scannedTotal {
+                    Section {
+                        ReceiptSummaryCard(total: total, vatRate: scannedVATRate)
+                    }
+                }
+                
                 typeSection
                 amountSection
                 if store.userMode == .zzp {
@@ -134,7 +147,7 @@ struct AddTransactionView: View {
     private var processingIndicator: some View {
         HStack {
             ProgressView()
-            Text("Processing...")
+            Text("Processing receipt...")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
         }
@@ -297,18 +310,39 @@ struct AddTransactionView: View {
         ReceiptParser.parseReceipt(from: image) { parsed in
             isProcessing = false
             
-            if let amount = parsed.amount {
-                self.amount = String(format: "%.2f", amount)
+            // Set total amount
+            if let total = parsed.amount {
+                self.amount = String(format: "%.2f", total)
+                self.scannedTotal = total
             }
+            
+            // Set detected VAT rate
+            if let rate = parsed.detectedBTWRate {
+                self.selectedBTWRate = rate
+                self.showBTWCalculation = rate > 0
+                self.scannedVATRate = rate
+            }
+            
+            // Show receipt summary
+            if parsed.amount != nil {
+                self.showReceiptSummary = true
+            }
+            
+            // Set date
             if let parsedDate = parsed.date {
                 self.date = parsedDate
             }
+            
+            // Set merchant as note
             if let merchant = parsed.merchant {
                 self.note = merchant
             }
             
-            let lowerText = parsed.fullText.lowercased()
-            if lowerText.contains("mercadona") || lowerText.contains("carrefour") || lowerText.contains("lidl") {
+            // Auto-detect category
+            let merchantLower = (parsed.merchant ?? "").lowercased()
+            
+            if merchantLower.contains("albert heijn") || merchantLower.contains("jumbo") ||
+               merchantLower.contains("lidl") || merchantLower.contains("aldi") {
                 if let foodCategory = availableCategories.first(where: { $0.name == "Food" }) {
                     self.selectedCategory = foodCategory
                 }

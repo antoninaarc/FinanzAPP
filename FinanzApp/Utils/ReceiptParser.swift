@@ -5,119 +5,175 @@ struct ParsedReceipt {
     var amount: Double?
     var date: Date?
     var merchant: String?
-    var fullText: String
+    var fullText: String = ""
+    var detectedBTWRate: Double?
 }
 
 class ReceiptParser {
     
     static func parseReceipt(from image: UIImage, completion: @escaping (ParsedReceipt) -> Void) {
         guard let cgImage = image.cgImage else {
-            completion(ParsedReceipt(fullText: "Error: No se pudo procesar la imagen"))
+            completion(ParsedReceipt())
             return
         }
         
+        let requestHandler = VNImageRequestHandler(cgImage: cgImage, options: [:])
         let request = VNRecognizeTextRequest { request, error in
             guard let observations = request.results as? [VNRecognizedTextObservation],
                   error == nil else {
-                completion(ParsedReceipt(fullText: "Error al leer texto"))
+                completion(ParsedReceipt())
                 return
             }
             
-            let recognizedText = observations.compactMap { observation in
+            let recognizedStrings = observations.compactMap { observation in
                 observation.topCandidates(1).first?.string
-            }.joined(separator: "\n")
-            
-            print("📄 Texto reconocido:\n\(recognizedText)")
-            
-            let amount = extractAmount(from: recognizedText)
-            let date = extractDate(from: recognizedText)
-            let merchant = extractMerchant(from: recognizedText)
-            
-            let parsed = ParsedReceipt(
-                amount: amount,
-                date: date,
-                merchant: merchant,
-                fullText: recognizedText
-            )
-            
-            DispatchQueue.main.async {
-                completion(parsed)
             }
+            
+            let fullText = recognizedStrings.joined(separator: "\n")
+            var parsed = ParsedReceipt()
+            parsed.fullText = fullText
+            
+            parsed.merchant = extractMerchant(from: recognizedStrings)
+            parsed.date = extractDate(from: recognizedStrings)
+            parsed.amount = extractAmount(from: recognizedStrings)
+            parsed.detectedBTWRate = detectBTWRate(from: recognizedStrings)
+            
+            completion(parsed)
         }
         
         request.recognitionLevel = .accurate
         request.usesLanguageCorrection = true
         
-        let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
-        
         DispatchQueue.global(qos: .userInitiated).async {
-            try? handler.perform([request])
+            try? requestHandler.perform([request])
         }
     }
     
-    private static func extractAmount(from text: String) -> Double? {
-        let patterns = [
-            "(?:total|subtotal|importe|amount)[:\\s]*[€$£¥]?\\s*(\\d+[.,]\\d{2})",
-            "(?:USD|EUR|GBP)[\\$€£]?\\s*(\\d+[.,]\\d{2})",
-            "^[€$£¥]\\s*(\\d+[.,]\\d{2})",
-            "(\\d+[.,]\\d{2})\\s*[€$£¥]",
-            "(\\d+[.,]\\d{2})"
-        ]
-        
-        var amounts: [Double] = []
-        
-        for pattern in patterns {
-            if let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) {
-                let nsString = text as NSString
-                let matches = regex.matches(in: text, range: NSRange(location: 0, length: nsString.length))
-                
-                for match in matches {
-                    if match.numberOfRanges > 1 {
-                        let amountString = nsString.substring(with: match.range(at: 1))
-                        let cleanAmount = amountString.replacingOccurrences(of: ",", with: ".")
-                        if let amount = Double(cleanAmount) {
-                            amounts.append(amount)
-                        }
-                    }
-                }
-            }
-        }
-        
-        return amounts.max()
-    }
-    
-    private static func extractDate(from text: String) -> Date? {
-        let patterns = [
-            "(\\d{1,2})[-/](\\d{1,2})[-/](\\d{4})",
-            "(\\d{1,2})[-/](\\d{1,2})[-/](\\d{2})"
-        ]
-        
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "dd/MM/yyyy"
-        
-        for pattern in patterns {
-            if let regex = try? NSRegularExpression(pattern: pattern) {
-                let nsString = text as NSString
-                if let match = regex.firstMatch(in: text, range: NSRange(location: 0, length: nsString.length)) {
-                    let dateString = nsString.substring(with: match.range)
-                    if let date = dateFormatter.date(from: dateString) {
-                        return date
-                    }
-                }
-            }
-        }
-        
-        return Date()
-    }
-    
-    private static func extractMerchant(from text: String) -> String? {
-        let lines = text.components(separatedBy: "\n")
+    // MARK: - Extract Merchant
+    private static func extractMerchant(from lines: [String]) -> String? {
+        let merchants = ["albert heijn", "ah", "jumbo", "lidl", "aldi"]
         
         for line in lines.prefix(5) {
-            let cleaned = line.trimmingCharacters(in: .whitespacesAndNewlines)
-            if cleaned.count > 3 && !cleaned.contains(where: { "0123456789".contains($0) }) {
-                return cleaned
+            let lower = line.lowercased()
+            for merchant in merchants {
+                if lower.contains(merchant) {
+                    return line.trimmingCharacters(in: .whitespacesAndNewlines)
+                }
             }
+        }
+        
+        return lines.first
+    }
+    
+    // MARK: - Extract Date
+    private static func extractDate(from lines: [String]) -> Date? {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "nl_NL")
+        let formats = ["dd-MM-yyyy", "dd/MM/yyyy", "dd-MM-yy"]
+        
+        for line in lines {
+            for format in formats {
+                formatter.dateFormat = format
+                if let date = formatter.date(from: line.trimmingCharacters(in: .whitespaces)) {
+                    return date
+                }
+            }
+        }
+        
+        return nil
+    }
+    
+    // MARK: - Extract Amount
+    private static func extractAmount(from lines: [String]) -> Double? {
+        // Priority 1: TE BETALEN (most important - final amount to pay)
+        for line in lines.reversed() {
+            let lower = line.lowercased().replacingOccurrences(of: " ", with: "")
+            if lower.contains("tebetalen") || lower.contains("apagar") {
+                if let amount = extractNumber(from: line), amount < 500 {
+                    return amount
+                }
+            }
+        }
+        
+        // Priority 2: TOTAAL (but not SUBTOTAAL)
+        for line in lines.reversed() {
+            let lower = line.lowercased()
+            if lower.contains("totaal") && !lower.contains("subtotaal") {
+                if let amount = extractNumber(from: line), amount < 500 {
+                    return amount
+                }
+            }
+        }
+        
+        // Priority 3: TOTAL
+        for line in lines.reversed() {
+            let lower = line.lowercased()
+            if lower.contains("total") && !lower.contains("subtotal") {
+                if let amount = extractNumber(from: line), amount < 500 {
+                    return amount
+                }
+            }
+        }
+        
+        // Fallback: reasonable numbers only
+        let amounts = lines.compactMap { extractNumber(from: $0) }
+        let filtered = amounts.filter { $0 > 0.50 && $0 < 200 }
+        return filtered.max()
+    }
+    
+    // MARK: - Extract Number
+    private static func extractNumber(from text: String) -> Double? {
+        var cleaned = text
+            .replacingOccurrences(of: "€", with: "")
+            .replacingOccurrences(of: "EUR", with: "")
+            .trimmingCharacters(in: .whitespaces)
+        
+        // Handle European format
+        if cleaned.contains(",") && !cleaned.contains(".") {
+            cleaned = cleaned.replacingOccurrences(of: ",", with: ".")
+        } else if cleaned.contains(".") && cleaned.contains(",") {
+            cleaned = cleaned.replacingOccurrences(of: ".", with: "")
+            cleaned = cleaned.replacingOccurrences(of: ",", with: ".")
+        }
+        
+        // Extract all numbers
+        let pattern = "[0-9]+\\.?[0-9]{0,2}"
+        if let regex = try? NSRegularExpression(pattern: pattern) {
+            let range = NSRange(cleaned.startIndex..., in: cleaned)
+            let matches = regex.matches(in: cleaned, range: range)
+            
+            // Get last number (usually the amount)
+            if let lastMatch = matches.last {
+                if let swiftRange = Range(lastMatch.range, in: cleaned) {
+                    let numString = String(cleaned[swiftRange])
+                    return Double(numString)
+                }
+            }
+        }
+        
+        return nil
+    }
+    
+    // MARK: - Detect BTW Rate
+    private static func detectBTWRate(from lines: [String]) -> Double? {
+        // Count B markers
+        var bCount = 0
+        for line in lines {
+            if line.hasSuffix(" B") || line.hasSuffix("B") || line.contains(" B ") {
+                bCount += 1
+            }
+        }
+        
+        if bCount >= 2 {
+            return 0.09
+        }
+        
+        let fullText = lines.joined(separator: " ").lowercased()
+        if fullText.contains("21%") {
+            return 0.21
+        }
+        if fullText.contains("9%") {
+            return 0.09
         }
         
         return nil

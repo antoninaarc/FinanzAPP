@@ -11,6 +11,8 @@
 		3E8A5B3C2F0E1B7800DAD29D /* ManageCategoriesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E8A5B3B2F0E1B7800DAD29D /* ManageCategoriesView.swift */; };
 		3E8A5B3E2F0E1BAF00DAD29D /* AddCategoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E8A5B3D2F0E1BAF00DAD29D /* AddCategoryView.swift */; };
 		3E8A5B402F0E1BE000DAD29D /* EditCategoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E8A5B3F2F0E1BE000DAD29D /* EditCategoryView.swift */; };
+		3E8A5B432F0E82CC00DAD29D /* ReceiptParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EAB1ED32F0BB911009B589B /* ReceiptParser.swift */; };
+		3E8A5B452F0E8A6300DAD29D /* ReceiptSummaryCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E8A5B442F0E8A6200DAD29D /* ReceiptSummaryCard.swift */; };
 		3EAB1EA82F0A8F33009B589B /* FinanzAppApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EAB1EA72F0A8F33009B589B /* FinanzAppApp.swift */; };
 		3EAB1EAA2F0A8F33009B589B /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EAB1EA92F0A8F33009B589B /* ContentView.swift */; };
 		3EAB1EAC2F0A8F37009B589B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3EAB1EAB2F0A8F37009B589B /* Assets.xcassets */; };
@@ -27,7 +29,6 @@
 		3EAB1ECE2F0B03CA009B589B /* FilterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EAB1ECD2F0B03CA009B589B /* FilterView.swift */; };
 		3EAB1ED02F0BB550009B589B /* BudgetCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EAB1ECF2F0BB550009B589B /* BudgetCard.swift */; };
 		3EAB1ED22F0BB8D4009B589B /* DocumentScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EAB1ED12F0BB8D4009B589B /* DocumentScannerView.swift */; };
-		3EAB1ED42F0BB911009B589B /* ReceiptParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EAB1ED32F0BB911009B589B /* ReceiptParser.swift */; };
 		3EAB1ED62F0BC242009B589B /* ImagePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EAB1ED52F0BC242009B589B /* ImagePicker.swift */; };
 		3EAB1ED82F0C0D09009B589B /* BTWVaultCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EAB1ED72F0C0D08009B589B /* BTWVaultCard.swift */; };
 		3EAB1EDA2F0C1333009B589B /* UserMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EAB1ED92F0C1332009B589B /* UserMode.swift */; };
@@ -39,6 +40,7 @@
 		3E8A5B3B2F0E1B7800DAD29D /* ManageCategoriesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManageCategoriesView.swift; sourceTree = "<group>"; };
 		3E8A5B3D2F0E1BAF00DAD29D /* AddCategoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddCategoryView.swift; sourceTree = "<group>"; };
 		3E8A5B3F2F0E1BE000DAD29D /* EditCategoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditCategoryView.swift; sourceTree = "<group>"; };
+		3E8A5B442F0E8A6200DAD29D /* ReceiptSummaryCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReceiptSummaryCard.swift; sourceTree = "<group>"; };
 		3EAB1EA42F0A8F33009B589B /* FinanzApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FinanzApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3EAB1EA72F0A8F33009B589B /* FinanzAppApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinanzAppApp.swift; sourceTree = "<group>"; };
 		3EAB1EA92F0A8F33009B589B /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -158,6 +160,7 @@
 				3EAB1EC22F0A9AB7009B589B /* TransactionRow.swift */,
 				3EAB1ECF2F0BB550009B589B /* BudgetCard.swift */,
 				3EAB1ED72F0C0D08009B589B /* BTWVaultCard.swift */,
+				3E8A5B442F0E8A6200DAD29D /* ReceiptSummaryCard.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -240,13 +243,14 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				3EAB1ED42F0BB911009B589B /* ReceiptParser.swift in Sources */,
 				3EAB1ED22F0BB8D4009B589B /* DocumentScannerView.swift in Sources */,
 				3EAB1EC72F0A9B67009B589B /* AddTransactionView.swift in Sources */,
 				3EAB1EC12F0A9A53009B589B /* BalanceCard.swift in Sources */,
 				3E8A5B3C2F0E1B7800DAD29D /* ManageCategoriesView.swift in Sources */,
+				3E8A5B432F0E82CC00DAD29D /* ReceiptParser.swift in Sources */,
 				3EAB1EB82F0A93EE009B589B /* Transation.swift in Sources */,
 				3EAB1EBE2F0A994E009B589B /* TransactionStore.swift in Sources */,
+				3E8A5B452F0E8A6300DAD29D /* ReceiptSummaryCard.swift in Sources */,
 				3EAB1ED82F0C0D09009B589B /* BTWVaultCard.swift in Sources */,
 				3EAB1ECE2F0B03CA009B589B /* FilterView.swift in Sources */,
 				3EAB1EAA2F0A8F33009B589B /* ContentView.swift in Sources */,
