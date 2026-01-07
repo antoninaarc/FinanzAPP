@@ -21,7 +21,7 @@ struct SettingsView: View {
                     }
                     .padding(.top)
                     
-                    // User Mode Section
+                    // User Mode Selection
                     VStack(alignment: .leading, spacing: 12) {
                         Text("USER MODE")
                             .font(.caption)
@@ -30,159 +30,43 @@ struct SettingsView: View {
                         
                         VStack(spacing: 16) {
                             // Basic Mode
-                            Button {
+                            ModeCard(
+                                icon: "person.fill",
+                                title: "Basic",
+                                subtitle: "Simple for personal use",
+                                isSelected: store.userMode == .basic,
+                                badge: nil
+                            ) {
                                 store.userMode = .basic
-                            } label: {
-                                HStack(spacing: 16) {
-                                    Image(systemName: "person.fill")
-                                        .font(.title2)
-                                        .foregroundColor(.blue)
-                                        .frame(width: 44)
-                                    
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text("Basic")
-                                            .font(.headline)
-                                            .foregroundColor(.primary)
-                                        Text("Simple for personal use")
-                                            .font(.subheadline)
-                                            .foregroundColor(.secondary)
-                                    }
-                                    
-                                    Spacer()
-                                    
-                                    if store.userMode == .basic {
-                                        Image(systemName: "checkmark.circle.fill")
-                                            .foregroundColor(.blue)
-                                            .font(.title2)
-                                    }
-                                }
-                                .padding()
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(Color(uiColor: .secondarySystemBackground))
-                                )
+                                store.saveUserMode(.basic)
                             }
-                            .buttonStyle(.plain)
                             
                             // ZZP Mode
-                            Button {
+                            ModeCard(
+                                icon: "briefcase.fill",
+                                title: "ZZP / Freelancer",
+                                subtitle: "With BTW tools",
+                                isSelected: store.userMode == .zzp,
+                                badge: nil
+                            ) {
                                 store.userMode = .zzp
-                            } label: {
-                                HStack(spacing: 16) {
-                                    Image(systemName: "briefcase.fill")
-                                        .font(.title2)
-                                        .foregroundColor(.blue)
-                                        .frame(width: 44)
-                                    
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text("ZZP / Freelancer")
-                                            .font(.headline)
-                                            .foregroundColor(.primary)
-                                        Text("With BTW tools")
-                                            .font(.subheadline)
-                                            .foregroundColor(.secondary)
-                                    }
-                                    
-                                    Spacer()
-                                    
-                                    if store.userMode == .zzp {
-                                        Image(systemName: "checkmark.circle.fill")
-                                            .foregroundColor(.blue)
-                                            .font(.title2)
-                                    }
-                                }
-                                .padding()
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(Color(uiColor: .secondarySystemBackground))
-                                )
+                                store.saveUserMode(.zzp)
                             }
-                            .buttonStyle(.plain)
                             
                             // Pro Mode (Coming Soon)
-                            HStack(spacing: 16) {
-                                Image(systemName: "star.fill")
-                                    .font(.title2)
-                                    .foregroundColor(.gray)
-                                    .frame(width: 44)
-                                
-                                VStack(alignment: .leading, spacing: 4) {
-                                    HStack(spacing: 8) {
-                                        Text("Pro")
-                                            .font(.headline)
-                                        Text("Coming Soon")
-                                            .font(.caption)
-                                            .padding(.horizontal, 8)
-                                            .padding(.vertical, 4)
-                                            .background(Color.blue.opacity(0.2))
-                                            .foregroundColor(.blue)
-                                            .cornerRadius(6)
-                                    }
-                                    Text("All features (coming soon)")
-                                        .font(.subheadline)
-                                        .foregroundColor(.secondary)
-                                }
-                                
-                                Spacer()
+                            ModeCard(
+                                icon: "star.fill",
+                                title: "Pro",
+                                subtitle: "All features",
+                                isSelected: false,
+                                badge: "Coming Soon"
+                            ) {
+                                // Disabled
                             }
-                            .padding()
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color(uiColor: .secondarySystemBackground))
-                            )
                             .opacity(0.6)
                         }
                         .padding(.horizontal)
                     }
-                    
-                    // Mode Features Section
-                    VStack(alignment: .leading, spacing: 16) {
-                        // Basic Mode Features
-                        VStack(alignment: .leading, spacing: 12) {
-                            HStack(spacing: 12) {
-                                Image(systemName: "person.fill")
-                                    .foregroundColor(.blue)
-                                Text("Basic Mode")
-                                    .font(.headline)
-                            }
-                            
-                            VStack(alignment: .leading, spacing: 6) {
-                                FeatureRow(text: "Add and view transactions")
-                                FeatureRow(text: "Simple charts")
-                                FeatureRow(text: "Weekly budget")
-                            }
-                            .padding(.leading, 8)
-                        }
-                        .padding()
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color(uiColor: .secondarySystemBackground))
-                        )
-                        
-                        // ZZP Mode Features
-                        VStack(alignment: .leading, spacing: 12) {
-                            HStack(spacing: 12) {
-                                Image(systemName: "briefcase.fill")
-                                    .foregroundColor(.blue)
-                                Text("ZZP Mode")
-                                    .font(.headline)
-                            }
-                            
-                            VStack(alignment: .leading, spacing: 6) {
-                                FeatureRow(text: "Everything from Basic")
-                                FeatureRow(text: "BTW Calculator")
-                                FeatureRow(text: "BTW Savings Vault")
-                                FeatureRow(text: "Quarterly reminders")
-                            }
-                            .padding(.leading, 8)
-                        }
-                        .padding()
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color(uiColor: .secondarySystemBackground))
-                        )
-                    }
-                    .padding(.horizontal)
                     
                     // Categories Management Section
                     VStack(alignment: .leading, spacing: 12) {
@@ -263,6 +147,38 @@ struct SettingsView: View {
                         .buttonStyle(.plain)
                         .padding(.horizontal)
                     }
+                    
+                    // Mode Features (Shows features for selected mode)
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("FEATURES")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .padding(.horizontal)
+                        
+                        if store.userMode == .basic {
+                            FeaturesList(
+                                icon: "person.fill",
+                                title: "Basic Mode",
+                                features: [
+                                    "Add and view transactions",
+                                    "Simple charts",
+                                    "Weekly budget"
+                                ]
+                            )
+                        } else if store.userMode == .zzp {
+                            FeaturesList(
+                                icon: "briefcase.fill",
+                                title: "ZZP Mode",
+                                features: [
+                                    "Everything from Basic",
+                                    "BTW Calculator",
+                                    "BTW Savings Vault",
+                                    "Quarterly reminders"
+                                ]
+                            )
+                        }
+                    }
+                    .padding(.horizontal)
                 }
                 .padding(.vertical)
             }
@@ -287,20 +203,101 @@ struct SettingsView: View {
     }
 }
 
-struct FeatureRow: View {
-    let text: String
+// MARK: - Mode Card Component
+struct ModeCard: View {
+    let icon: String
+    let title: String
+    let subtitle: String
+    let isSelected: Bool
+    let badge: String?
+    let action: () -> Void
     
     var body: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "circle.fill")
-                .font(.system(size: 6))
-                .foregroundColor(.secondary)
-            Text(text)
-                .font(.subheadline)
-                .foregroundColor(.primary)
+        Button(action: action) {
+            HStack(spacing: 16) {
+                Image(systemName: icon)
+                    .font(.title2)
+                    .foregroundColor(.blue)
+                    .frame(width: 44)
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 8) {
+                        Text(title)
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                        
+                        if let badge = badge {
+                            Text(badge)
+                                .font(.caption)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(Color.blue.opacity(0.2))
+                                .foregroundColor(.blue)
+                                .cornerRadius(6)
+                        }
+                    }
+                    
+                    Text(subtitle)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+                
+                Spacer()
+                
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(.blue)
+                        .font(.title2)
+                }
+            }
+            .padding()
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color(uiColor: .secondarySystemBackground))
+            )
         }
+        .buttonStyle(.plain)
     }
 }
+
+// MARK: - Features List Component
+struct FeaturesList: View {
+    let icon: String
+    let title: String
+    let features: [String]
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 12) {
+                Image(systemName: icon)
+                    .foregroundColor(.blue)
+                Text(title)
+                    .font(.headline)
+            }
+            
+            VStack(alignment: .leading, spacing: 6) {
+                ForEach(features, id: \.self) { feature in
+                    HStack(spacing: 8) {
+                        Image(systemName: "circle.fill")
+                            .font(.system(size: 6))
+                            .foregroundColor(.secondary)
+                        Text(feature)
+                            .font(.subheadline)
+                            .foregroundColor(.primary)
+                    }
+                }
+            }
+            .padding(.leading, 8)
+        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color(uiColor: .secondarySystemBackground))
+        )
+    }
+}
+
 struct SettingsView_Previews: PreviewProvider {
     static var previews: some View {
         SettingsView(store: TransactionStore())
