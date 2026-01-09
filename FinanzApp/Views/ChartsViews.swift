@@ -2,168 +2,197 @@ import SwiftUI
 
 struct ChartsView: View {
     @ObservedObject var store: TransactionStore
-    
-    var expensesByCategory: [CategoryExpense] {
-        let expenses = store.transactions.filter { $0.type == .expense }
-        var categoryTotals: [String: Double] = [:]
-        
-        for expense in expenses {
-            categoryTotals[expense.category, default: 0] += expense.amount
-        }
-        
-        return categoryTotals.map { key, value in
-            let emoji = Category.allCategories.first(where: { $0.name == key })?.emoji ?? "💰"
-            return CategoryExpense(category: key, amount: value, emoji: emoji)
-        }
-        .sorted { $0.amount > $1.amount }
-    }
-    
-    var totalExpenses: Double {
-        expensesByCategory.reduce(0) { $0 + $1.amount }
-    }
+    @State private var selectedPeriod: FilterPeriod = .month
     
     var body: some View {
         ScrollView {
-            VStack(spacing: 24) {
-                Text("📊 Statistics")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .padding(.top)
+            VStack(spacing: 20) {
+                // Filter
+                FilterView(selectedPeriod: $selectedPeriod)
                 
-                if !expensesByCategory.isEmpty {
+                // Summary Cards
+                HStack(spacing: 15) {
+                    StatCard(
+                        title: "Income",
+                        amount: store.totalIncome(for: selectedPeriod),
+                        icon: "arrow.down.circle.fill",
+                        color: .green
+                    )
+                    
+                    StatCard(
+                        title: "Expenses",
+                        amount: store.totalExpense(for: selectedPeriod),
+                        icon: "arrow.up.circle.fill",
+                        color: .red
+                    )
+                }
+                .padding(.horizontal)
+                
+                // Net Balance
+                VStack(spacing: 8) {
+                    Text("Net Balance")
+                        .font(.headline)
+                        .foregroundColor(.secondary)
+                    Text("€\(store.totalBalance(for: selectedPeriod), specifier: "%.2f")")
+                        .font(.system(size: 36, weight: .bold))
+                        .foregroundColor(store.totalBalance(for: selectedPeriod) >= 0 ? .green : .red)
+                }
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(Color(.systemGray6))
+                .cornerRadius(15)
+                .padding(.horizontal)
+                
+                // Category Breakdown
+                if !store.filteredTransactions(by: selectedPeriod).filter({ $0.type == .expense }).isEmpty {
                     VStack(alignment: .leading, spacing: 16) {
                         Text("Expenses by Category")
                             .font(.title2)
                             .fontWeight(.bold)
                             .padding(.horizontal)
                         
-                        VStack(spacing: 12) {
-                            ForEach(expensesByCategory) { item in
-                                HStack(spacing: 12) {
-                                    Text(item.emoji)
-                                        .font(.title2)
-                                    
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        HStack {
-                                            Text(item.category)
-                                                .font(.subheadline)
-                                                .fontWeight(.medium)
-                                            Spacer()
-                                            Text("€\(item.amount, specifier: "%.2f")")
-                                                .font(.subheadline)
-                                                .fontWeight(.bold)
-                                        }
-                                        
-                                        GeometryReader { geometry in
-                                            ZStack(alignment: .leading) {
-                                                RoundedRectangle(cornerRadius: 4)
-                                                    .fill(Color.gray.opacity(0.2))
-                                                    .frame(height: 8)
-                                                
-                                                RoundedRectangle(cornerRadius: 4)
-                                                    .fill(Color.blue)
-                                                    .frame(
-                                                        width: geometry.size.width * (item.amount / totalExpenses),
-                                                        height: 8
-                                                    )
-                                            }
-                                        }
-                                        .frame(height: 8)
-                                    }
-                                }
-                                .padding()
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(Color(uiColor: .secondarySystemBackground))
-                                )
-                            }
-                        }
-                        .padding(.horizontal)
+                        CategoryBreakdownView(store: store, period: selectedPeriod)
                     }
-                }
-                
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Monthly Balance")
-                        .font(.title2)
-                        .fontWeight(.bold)
-                        .padding(.horizontal)
-                    
-                    HStack(spacing: 16) {
-                        VStack(spacing: 8) {
-                            Image(systemName: "arrow.up.circle.fill")
-                                .font(.system(size: 40))
-                                .foregroundColor(.green)
-                            
-                            Text("Income")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            
-                            Text("€\(store.totalIncome, specifier: "%.2f")")
-                                .font(.title3)
-                                .fontWeight(.bold)
-                                .foregroundColor(.green)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.green.opacity(0.1))
-                        )
-                        
-                        VStack(spacing: 8) {
-                            Image(systemName: "arrow.down.circle.fill")
-                                .font(.system(size: 40))
-                                .foregroundColor(.red)
-                            
-                            Text("Expenses")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            
-                            Text("€\(store.totalExpense, specifier: "%.2f")")
-                                .font(.title3)
-                                .fontWeight(.bold)
-                                .foregroundColor(.red)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.red.opacity(0.1))
-                        )
-                    }
-                    .padding(.horizontal)
-                }
-                
-                if expensesByCategory.isEmpty {
+                    .padding(.vertical)
+                } else {
                     VStack(spacing: 16) {
-                        Image(systemName: "chart.bar")
+                        Image(systemName: "chart.pie")
                             .font(.system(size: 60))
                             .foregroundColor(.gray)
-                        Text("Not enough data")
-                            .font(.title3)
+                        Text("No expense data to display")
+                            .font(.headline)
                             .foregroundColor(.gray)
-                        Text("Add some transactions to see statistics")
+                        Text("Add some transactions to see charts")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
                     }
+                    .frame(maxWidth: .infinity)
                     .padding(.vertical, 60)
                 }
             }
-            .padding(.vertical)
+            .padding(.top)
         }
+        .navigationTitle("📊 Statistics")
+        .navigationBarTitleDisplayMode(.large)
     }
 }
 
-struct CategoryExpense: Identifiable {
-    let id = UUID()
-    let category: String
+struct StatCard: View {
+    let title: String
     let amount: Double
-    let emoji: String
+    let icon: String
+    let color: Color
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Image(systemName: icon)
+                    .foregroundColor(color)
+                Text(title)
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+            }
+            
+            Text("€\(amount, specifier: "%.2f")")
+                .font(.title2)
+                .fontWeight(.bold)
+                .foregroundColor(color)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 15)
+                .fill(color.opacity(0.1))
+        )
+    }
 }
 
-struct ChartsView_Previews: PreviewProvider {
-    static var previews: some View {
-        ChartsView(store: TransactionStore())
+struct CategoryBreakdownView: View {
+    @ObservedObject var store: TransactionStore
+    let period: FilterPeriod
+    
+    private var categoryTotals: [(String, Double)] {
+        let totals = store.transactionsByCategory(for: period)
+        return totals.sorted { $0.value > $1.value }
+    }
+    
+    private var totalExpenses: Double {
+        categoryTotals.reduce(0) { $0 + $1.1 }
+    }
+    
+    var body: some View {
+        VStack(spacing: 12) {
+            ForEach(categoryTotals, id: \.0) { category, amount in
+                CategoryBar(
+                    category: category,
+                    amount: amount,
+                    percentage: totalExpenses > 0 ? amount / totalExpenses : 0,
+                    emoji: getCategoryEmoji(category)
+                )
+            }
+        }
+        .padding(.horizontal)
+    }
+    
+    private func getCategoryEmoji(_ categoryName: String) -> String {
+        if let category = Category.defaultCategories.first(where: { $0.name == categoryName }) {
+            return category.emoji
+        }
+        if let customCategory = store.customCategories.first(where: { $0.name == categoryName }) {
+            return customCategory.emoji
+        }
+        return "📦"
+    }
+}
+
+struct CategoryBar: View {
+    let category: String
+    let amount: Double
+    let percentage: Double
+    let emoji: String
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(emoji)
+                    .font(.title3)
+                Text(category)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                
+                Spacer()
+                
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text("€\(amount, specifier: "%.2f")")
+                        .font(.headline)
+                    Text("\(Int(percentage * 100))%")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+            
+            GeometryReader { geometry in
+                ZStack(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(Color(.systemGray5))
+                        .frame(height: 8)
+                    
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(
+                            LinearGradient(
+                                colors: [.blue, .blue.opacity(0.7)],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .frame(width: geometry.size.width * percentage, height: 8)
+                        .animation(.spring(), value: percentage)
+                }
+            }
+            .frame(height: 8)
+        }
+        .padding()
+        .background(Color(.systemGray6))
+        .cornerRadius(12)
     }
 }

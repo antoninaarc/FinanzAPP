@@ -3,60 +3,91 @@ import SwiftUI
 struct TransactionRow: View {
     let transaction: Transaction
     
-    var categoryEmoji: String {
-        Category.allCategories.first(where: { $0.name == transaction.category })?.emoji ?? "📦"
+    private var categoryEmoji: String {
+        if let category = Category.defaultCategories.first(where: { $0.name == transaction.category }) {
+            return category.emoji
+        }
+        return "📦"
     }
     
     var body: some View {
         HStack(spacing: 12) {
-            // Emoji + Category name
+            // Category Icon
+            Text(categoryEmoji)
+                .font(.system(size: 28))
+                .frame(width: 50, height: 50)
+                .background(
+                    Circle()
+                        .fill(transaction.type == .income ? Color.green.opacity(0.2) : Color.red.opacity(0.2))
+                )
+            
+            // Transaction Details
             VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 6) {
-                    Text(categoryEmoji)
-                        .font(.title2)
-                    Text(transaction.category)
-                        .font(.headline)
-                }
+                Text(transaction.category)
+                    .font(.headline)
                 
                 if !transaction.note.isEmpty {
                     Text(transaction.note)
                         .font(.subheadline)
                         .foregroundColor(.secondary)
+                        .lineLimit(1)
                 }
                 
-                Text(transaction.date, style: .relative)
+                Text(transaction.date, style: .date)
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
             
             Spacer()
             
+            // Amount
             VStack(alignment: .trailing, spacing: 4) {
                 Text("\(transaction.type == .income ? "+" : "-")€\(transaction.amount, specifier: "%.2f")")
                     .font(.headline)
+                    .fontWeight(.semibold)
                     .foregroundColor(transaction.type == .income ? .green : .red)
                 
-                if let btwAmount = transaction.btwAmount, btwAmount > 0 {
-                    Text("VAT: €\(btwAmount, specifier: "%.2f")")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                // BTW indicator for ZZP users
+                if let btwRate = transaction.btwRate {
+                    Text("BTW \(Int(btwRate * 100))%")
+                        .font(.caption2)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.blue.opacity(0.2))
+                        .foregroundColor(.blue)
+                        .cornerRadius(4)
                 }
             }
         }
-        .padding(.vertical, 8)
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color(.systemBackground))
+                .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
+        )
     }
 }
 
 struct TransactionRow_Previews: PreviewProvider {
     static var previews: some View {
-        TransactionRow(transaction: Transaction(
-            amount: 25.50,
-            category: "Food",
-            type: .expense,
-            note: "Lunch at restaurant",
-            date: Date(),
-            btwRate: 0.21
-        ))
+        VStack {
+            TransactionRow(transaction: Transaction(
+                amount: 45.50,
+                category: "Groceries",
+                type: .expense,
+                note: "Weekly shopping",
+                date: Date()
+            ))
+            
+            TransactionRow(transaction: Transaction(
+                amount: 2500.00,
+                category: "Salary",
+                type: .income,
+                note: "January salary",
+                date: Date(),
+                btwRate: 0.21
+            ))
+        }
         .padding()
     }
 }

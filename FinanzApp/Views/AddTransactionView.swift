@@ -1,149 +1,107 @@
 import SwiftUI
+import PhotosUI
 
 struct AddTransactionView: View {
     @ObservedObject var store: TransactionStore
     @Environment(\.dismiss) var dismiss
     
-    @State private var amount: String = ""
-    @State private var selectedCategory = Category.defaultCategories[0]
-    @State private var selectedType: TransactionType = .expense
-    @State private var note: String = ""
+    @State private var amount = ""
+    @State private var selectedCategory = "Groceries"
+    @State private var transactionType: TransactionType = .expense
+    @State private var note = ""
     @State private var date = Date()
-    @State private var showingScanner = false
-    @State private var scannedImages: [UIImage] = []
-    @State private var isProcessing = false
-    @State private var showingImagePicker = false
-    @State private var selectedImage: UIImage?
-    @State private var showingCameraUnavailableAlert = false
-    
-    // Receipt summary
-    @State private var showReceiptSummary = false
-    @State private var scannedTotal: Double?
-    @State private var scannedVATRate: Double?
-    
-    // BTW
     @State private var selectedBTWRate: Double? = nil
-    @State private var showBTWCalculation = false
-    
-    var availableCategories: [Category] {
-        return store.allCategories
-    }
+    @State private var showingImagePicker = false
+    @State private var selectedPhotoItem: PhotosPickerItem?
+    @State private var selectedImage: UIImage?
     
     var body: some View {
         NavigationView {
-            Form {
-                scannerSection
-                
-                if showReceiptSummary, let total = scannedTotal {
-                    Section {
-                        ReceiptSummaryCard(total: total, vatRate: scannedVATRate)
+            formContent
+                .navigationTitle("New Transaction")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button("Cancel") { dismiss() }
+                    }
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button("Save") { saveTransaction() }
+                            .disabled(amount.isEmpty)
                     }
                 }
-                
-                typeSection
-                amountSection
-                if store.userMode == .zzp {
-                    btwSection
+                .photosPicker(
+                    isPresented: $showingImagePicker,
+                    selection: $selectedPhotoItem,
+                    matching: .images
+                )
+                .task(id: selectedPhotoItem) {
+                    if let item = selectedPhotoItem {
+                        loadImage(from: item)
+                    }
                 }
-                categorySection
-                detailsSection
-            }
-            .navigationTitle("New Transaction")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") { dismiss() }
+                .task(id: selectedImage) {
+                    if let image = selectedImage {
+                        processReceipt(image: image)
+                    }
                 }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Save") { saveTransaction() }
-                        .disabled(amount.isEmpty)
-                }
-            }
-            .sheet(isPresented: $showingScanner) {
-                if DocumentScannerView.isAvailable {
-                    DocumentScannerView(scannedImages: $scannedImages)
-                }
-            }
-            .sheet(isPresented: $showingImagePicker) {
-                ImagePicker(selectedImage: $selectedImage)
-            }
-            .alert("Camera Not Available", isPresented: $showingCameraUnavailableAlert) {
-                Button("OK", role: .cancel) { }
-            } message: {
-                Text("Document scanning is not available on the simulator. Please use a physical device or select from gallery instead.")
-            }
-            .onChange(of: scannedImages) { newValue in
-                if let image = newValue.last {
-                    processScannedReceipt(image)
-                }
-            }
-            .onChange(of: selectedImage) { newValue in
-                if let image = newValue {
-                    processScannedReceipt(image)
-                }
-            }
-            .onAppear {
-                if let firstCategory = availableCategories.first {
-                    selectedCategory = firstCategory
-                }
-            }
         }
     }
     
-    private var scannerSection: some View {
-        Section {
-            VStack(spacing: 12) {
-                Button(action: {
-                    if DocumentScannerView.isAvailable {
-                        showingScanner = true
-                    } else {
-                        showingCameraUnavailableAlert = true
-                    }
-                }) {
-                    HStack {
-                        Image(systemName: "doc.text.viewfinder")
-                            .font(.title2)
-                        Text("Scan with Camera")
-                            .fontWeight(.semibold)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(12)
-                }
-                .buttonStyle(PlainButtonStyle())
-                
-                Button(action: { showingImagePicker = true }) {
-                    HStack {
-                        Image(systemName: "photo.on.rectangle")
-                            .font(.title2)
-                        Text("Select from Gallery")
-                            .fontWeight(.semibold)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.green)
-                    .foregroundColor(.white)
-                    .cornerRadius(12)
-                }
-                .buttonStyle(PlainButtonStyle())
-                
-                if isProcessing {
-                    HStack {
-                        ProgressView()
-                        Text("Processing receipt...")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                    }
-                }
+    private var formContent: some View {
+        Form {
+            scanOptionsSection
+            typeSection
+            amountSection
+            if store.userMode == .zzp {
+                btwSection
             }
+            categorySection
+            detailsSection
         }
+    }
+    
+    private var scanOptionsSection: some View {
+        Section {
+            Button(action: {
+                print("Camera functionality - requires VisionKit")
+            }) {
+                HStack {
+                    Image(systemName: "camera.fill")
+                        .foregroundColor(.white)
+                    Text("Scan with Camera")
+                        .foregroundColor(.white)
+                        .fontWeight(.semibold)
+                }
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(Color.blue)
+                .cornerRadius(12)
+            }
+            .buttonStyle(.plain)
+            
+            Button(action: {
+                showingImagePicker = true
+            }) {
+                HStack {
+                    Image(systemName: "photo.fill")
+                        .foregroundColor(.white)
+                    Text("Select from Gallery")
+                        .foregroundColor(.white)
+                        .fontWeight(.semibold)
+                }
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(Color.green)
+                .cornerRadius(12)
+            }
+            .buttonStyle(.plain)
+        }
+        .listRowBackground(Color.clear)
     }
     
     private var typeSection: some View {
-        Section("Type") {
-            Picker("Type", selection: $selectedType) {
+        Section("TYPE") {
+            Picker("Type", selection: $transactionType) {
                 Text("Expense").tag(TransactionType.expense)
                 Text("Income").tag(TransactionType.income)
             }
@@ -152,11 +110,13 @@ struct AddTransactionView: View {
     }
     
     private var amountSection: some View {
-        Section("Amount") {
+        Section("AMOUNT") {
             HStack {
                 Text("€")
+                    .foregroundColor(.secondary)
                 TextField("0.00", text: $amount)
                     .keyboardType(.decimalPad)
+                    .font(.system(size: 24, weight: .medium))
             }
         }
     }
@@ -164,148 +124,99 @@ struct AddTransactionView: View {
     private var btwSection: some View {
         Section("VAT (BTW)") {
             HStack(spacing: 12) {
-                btwButton(rate: 0.21, label: "21%")
-                btwButton(rate: 0.09, label: "9%")
-                btwButton(rate: 0.0, label: "0%")
-            }
-            
-            if showBTWCalculation, let rate = selectedBTWRate, rate > 0 {
-                if let amountValue = Double(amount.replacingOccurrences(of: ",", with: ".")) {
-                    let baseAmount = amountValue / (1 + rate)
-                    let btwAmount = amountValue - baseAmount
-                    
-                    VStack(spacing: 8) {
-                        HStack {
-                            Text("Amount excl. VAT")
-                                .foregroundColor(.secondary)
-                            Spacer()
-                            Text("€\(baseAmount, specifier: "%.2f")")
-                                .fontWeight(.semibold)
-                        }
-                        HStack {
-                            Text("VAT (\(Int(rate * 100))%)")
-                                .foregroundColor(.secondary)
-                            Spacer()
-                            Text("€\(btwAmount, specifier: "%.2f")")
-                                .fontWeight(.semibold)
-                                .foregroundColor(.green)
-                        }
-                        Divider()
-                        HStack {
-                            Text("Total incl. VAT")
-                                .fontWeight(.bold)
-                            Spacer()
-                            Text("€\(amountValue, specifier: "%.2f")")
-                                .fontWeight(.bold)
-                        }
-                    }
-                    .padding()
-                    .background(Color(uiColor: .secondarySystemBackground))
-                    .cornerRadius(8)
+                BTWButton(rate: 0.21, selected: selectedBTWRate == 0.21) {
+                    selectedBTWRate = 0.21
+                }
+                BTWButton(rate: 0.09, selected: selectedBTWRate == 0.09) {
+                    selectedBTWRate = 0.09
+                }
+                BTWButton(rate: 0.0, selected: selectedBTWRate == 0.0) {
+                    selectedBTWRate = 0.0
                 }
             }
         }
-    }
-    
-    private func btwButton(rate: Double, label: String) -> some View {
-        Button(action: {
-            selectedBTWRate = rate
-            showBTWCalculation = rate > 0
-        }) {
-            Text(label)
-                .fontWeight(selectedBTWRate == rate ? .bold : .regular)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
-                .background(selectedBTWRate == rate ? Color.green : Color.gray.opacity(0.2))
-                .foregroundColor(selectedBTWRate == rate ? .white : .primary)
-                .cornerRadius(8)
-        }
-        .buttonStyle(PlainButtonStyle())
     }
     
     private var categorySection: some View {
-        Section("Category") {
+        Section("CATEGORY") {
             Picker("Category", selection: $selectedCategory) {
-                ForEach(availableCategories.filter { $0.parentID == nil }) { parentCategory in
+                ForEach(store.allCategories) { category in
                     HStack {
-                        Text(parentCategory.emoji)
-                        Text(parentCategory.name)
+                        Text(category.emoji)
+                        Text(category.name)
                     }
-                    .tag(parentCategory)
-                    
-                    ForEach(store.getSubcategories(for: parentCategory.id)) { subcategory in
-                        HStack {
-                            Text("  ")
-                            Text(subcategory.emoji)
-                            Text(subcategory.name)
-                        }
-                        .tag(subcategory)
-                    }
+                    .tag(category.name)
                 }
             }
-            .pickerStyle(.menu)
         }
     }
     
     private var detailsSection: some View {
-        Section("Details") {
+        Section("DETAILS") {
             TextField("Note (optional)", text: $note)
             DatePicker("Date", selection: $date, displayedComponents: .date)
         }
     }
     
-    private func saveTransaction() {
+    func loadImage(from item: PhotosPickerItem) {
+        Task {
+            if let data = try? await item.loadTransferable(type: Data.self),
+               let image = UIImage(data: data) {
+                await MainActor.run {
+                    selectedImage = image
+                }
+            }
+        }
+    }
+    
+    func processReceipt(image: UIImage) {
+        ReceiptParser.extractText(from: image) { result in
+            DispatchQueue.main.async {
+                if let extractedAmount = result.amount {
+                    self.amount = String(format: "%.2f", extractedAmount)
+                }
+                if let merchant = result.merchant {
+                    self.note = merchant
+                }
+                if let category = result.suggestedCategory {
+                    self.selectedCategory = category
+                }
+            }
+        }
+    }
+    
+    func saveTransaction() {
         guard let amountValue = Double(amount.replacingOccurrences(of: ",", with: ".")) else { return }
         
         let transaction = Transaction(
             amount: amountValue,
-            category: selectedCategory.name,
-            type: selectedType,
+            category: selectedCategory,
+            type: transactionType,
             note: note,
             date: date,
-            btwRate: selectedBTWRate
+            btwRate: store.userMode == .zzp ? selectedBTWRate : nil
         )
         
         store.addTransaction(transaction)
         dismiss()
     }
+}
+
+struct BTWButton: View {
+    let rate: Double
+    let selected: Bool
+    let action: () -> Void
     
-    private func processScannedReceipt(_ image: UIImage) {
-        isProcessing = true
-        
-        ReceiptParser.parseReceipt(from: image) { parsed in
-            isProcessing = false
-            
-            if let total = parsed.amount {
-                self.amount = String(format: "%.2f", total)
-                self.scannedTotal = total
-            }
-            
-            if let rate = parsed.detectedBTWRate {
-                self.selectedBTWRate = rate
-                self.showBTWCalculation = rate > 0
-                self.scannedVATRate = rate
-            }
-            
-            if parsed.amount != nil {
-                self.showReceiptSummary = true
-            }
-            
-            if let parsedDate = parsed.date {
-                self.date = parsedDate
-            }
-            
-            if let merchant = parsed.merchant {
-                self.note = merchant
-            }
-            
-            let merchantLower = (parsed.merchant ?? "").lowercased()
-            if merchantLower.contains("albert heijn") || merchantLower.contains("jumbo") ||
-               merchantLower.contains("lidl") || merchantLower.contains("aldi") {
-                if let foodCategory = availableCategories.first(where: { $0.name == "Food" }) {
-                    self.selectedCategory = foodCategory
-                }
-            }
+    var body: some View {
+        Button(action: action) {
+            Text("\(Int(rate * 100))%")
+                .font(.headline)
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(selected ? Color.blue : Color(.systemGray5))
+                .foregroundColor(selected ? .white : .primary)
+                .cornerRadius(10)
         }
+        .buttonStyle(.plain)
     }
 }
