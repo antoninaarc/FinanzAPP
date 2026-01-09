@@ -9,135 +9,128 @@ struct BudgetCard: View {
     }
     
     var progress: Double {
-        min(spent / weeklyBudget, 1.0)
+        guard weeklyBudget > 0 else { return 0 }
+        return min(spent / weeklyBudget, 1.0)
     }
     
-    var isOverBudget: Bool {
-        spent > weeklyBudget
-    }
-    
-    // Monthly context (psychological anchor)
-    var monthlyBudget: Double {
-        weeklyBudget * 4.33 // Average weeks per month
-    }
-    
-    var dailyAllowance: Double {
-        remaining / 7 // Days left in week
+    var statusColor: Color {
+        if progress < 0.7 {
+            return .green
+        } else if progress < 0.9 {
+            return .orange
+        } else {
+            return .red
+        }
     }
     
     var body: some View {
-        VStack(spacing: 16) {
-            // Header with weekly focus
+        VStack(alignment: .leading, spacing: 16) {
+            // Header
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Weekly Budget")
                         .font(.headline)
-                    Text("Limit: €\(weeklyBudget, specifier: "%.2f")")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
+                    Text("€\(weeklyBudget, specifier: "%.2f")")
+                        .font(.title2)
+                        .fontWeight(.bold)
                 }
                 
                 Spacer()
                 
                 VStack(alignment: .trailing, spacing: 4) {
-                    Text(isOverBudget ? "Exceeded!" : "Available")
-                        .font(.caption)
-                        .foregroundColor(isOverBudget ? .red : .green)
-                    Text("€\(abs(remaining), specifier: "%.2f")")
+                    Text("Remaining")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    Text("€\(remaining, specifier: "%.2f")")
                         .font(.title3)
-                        .fontWeight(.bold)
-                        .foregroundColor(isOverBudget ? .red : .green)
+                        .fontWeight(.semibold)
+                        .foregroundColor(remaining >= 0 ? statusColor : .red)
                 }
             }
             
             // Progress Bar
-            VStack(spacing: 8) {
+            VStack(alignment: .leading, spacing: 8) {
                 GeometryReader { geometry in
                     ZStack(alignment: .leading) {
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(Color.gray.opacity(0.2))
+                        // Background
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(Color(.systemGray5))
                             .frame(height: 12)
                         
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(progressColor)
-                            .frame(
-                                width: geometry.size.width * progress,
-                                height: 12
+                        // Progress
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(
+                                LinearGradient(
+                                    colors: [statusColor, statusColor.opacity(0.7)],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
                             )
+                            .frame(width: geometry.size.width * progress, height: 12)
+                            .animation(.spring(), value: progress)
                     }
                 }
                 .frame(height: 12)
                 
+                // Stats
                 HStack {
                     Text("Spent: €\(spent, specifier: "%.2f")")
                         .font(.caption)
                         .foregroundColor(.secondary)
+                    
                     Spacer()
+                    
                     Text("\(Int(progress * 100))%")
                         .font(.caption)
                         .fontWeight(.semibold)
-                        .foregroundColor(isOverBudget ? .red : .primary)
+                        .foregroundColor(statusColor)
                 }
             }
             
-            // Daily allowance (psychological trick: smaller numbers feel more manageable)
-            if !isOverBudget && remaining > 0 {
-                HStack(spacing: 8) {
-                    Image(systemName: "calendar.day.timeline.left")
-                        .foregroundColor(.blue)
+            // Warning message if over budget
+            if remaining < 0 {
+                HStack {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundColor(.red)
+                    Text("You've exceeded your weekly budget by €\(abs(remaining), specifier: "%.2f")")
                         .font(.caption)
-                    Text("You can spend €\(dailyAllowance, specifier: "%.2f")/day this week")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(.red)
                 }
-                .padding(.top, 4)
-            }
-            
-            // Monthly context (subtle reference point)
-            Divider()
-            
-            HStack {
-                Image(systemName: "calendar")
-                    .foregroundColor(.secondary)
-                    .font(.caption2)
-                Text("Monthly budget: €\(monthlyBudget, specifier: "%.0f")")
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
-                Spacer()
-                Text("≈ €\(weeklyBudget, specifier: "%.0f")/week")
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(Color.red.opacity(0.1))
+                .cornerRadius(8)
+            } else if progress > 0.8 {
+                HStack {
+                    Image(systemName: "exclamationmark.circle.fill")
+                        .foregroundColor(.orange)
+                    Text("You're approaching your weekly limit")
+                        .font(.caption)
+                        .foregroundColor(.orange)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(Color.orange.opacity(0.1))
+                .cornerRadius(8)
             }
         }
         .padding()
         .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color(uiColor: .secondarySystemBackground))
-                .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color(.systemBackground))
+                .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
         )
-    }
-    
-    // Progressive color system (psychological feedback)
-    var progressColor: Color {
-        if progress < 0.5 {
-            return .green  // Safe zone
-        } else if progress < 0.8 {
-            return .blue   // Warning zone
-        } else if progress < 1.0 {
-            return .orange // Danger zone
-        } else {
-            return .red    // Over budget
-        }
     }
 }
 
 struct BudgetCard_Previews: PreviewProvider {
     static var previews: some View {
         VStack(spacing: 20) {
-            BudgetCard(weeklyBudget: 200, spent: 50)
-            BudgetCard(weeklyBudget: 200, spent: 150)
-            BudgetCard(weeklyBudget: 200, spent: 250)
+            BudgetCard(weeklyBudget: 500, spent: 350)
+            BudgetCard(weeklyBudget: 500, spent: 450)
+            BudgetCard(weeklyBudget: 500, spent: 550)
         }
         .padding()
+        .background(Color(.systemGroupedBackground))
     }
 }

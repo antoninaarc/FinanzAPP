@@ -1,184 +1,140 @@
-import Vision
 import UIKit
+import Vision
 
-struct ParsedReceipt {
+struct ReceiptResult {
     var amount: Double?
-    var date: Date?
     var merchant: String?
-    var fullText: String = ""
-    var detectedBTWRate: Double?
+    var date: Date?
+    var suggestedCategory: String?
 }
 
 class ReceiptParser {
-    
-    static func parseReceipt(from image: UIImage, completion: @escaping (ParsedReceipt) -> Void) {
+    static func extractText(from image: UIImage, completion: @escaping (ReceiptResult) -> Void) {
         guard let cgImage = image.cgImage else {
-            completion(ParsedReceipt())
+            completion(ReceiptResult())
             return
         }
         
-        let requestHandler = VNImageRequestHandler(cgImage: cgImage, options: [:])
         let request = VNRecognizeTextRequest { request, error in
-            guard let observations = request.results as? [VNRecognizedTextObservation],
-                  error == nil else {
-                completion(ParsedReceipt())
+            guard error == nil else {
+                completion(ReceiptResult())
                 return
             }
             
-            let recognizedStrings = observations.compactMap { observation in
-                observation.topCandidates(1).first?.string
+            guard let observations = request.results as? [VNRecognizedTextObservation] else {
+                completion(ReceiptResult())
+                return
             }
             
-            let fullText = recognizedStrings.joined(separator: "\n")
-            var parsed = ParsedReceipt()
-            parsed.fullText = fullText
+            var result = ReceiptResult()
+            var allText: [String] = []
             
-            parsed.merchant = extractMerchant(from: recognizedStrings)
-            parsed.date = extractDate(from: recognizedStrings)
-            parsed.amount = extractAmount(from: recognizedStrings)
-            parsed.detectedBTWRate = detectBTWRate(from: recognizedStrings)
+            for observation in observations {
+                guard let topCandidate = observation.topCandidates(1).first else { continue }
+                allText.append(topCandidate.string)
+            }
             
-            completion(parsed)
+            // Extract amount
+            result.amount = extractAmount(from: allText)
+            
+            // Extract merchant name
+            result.merchant = extractMerchant(from: allText)
+            
+            // Suggest category
+            result.suggestedCategory = suggestCategory(from: allText)
+            
+            completion(result)
         }
         
         request.recognitionLevel = .accurate
+        request.recognitionLanguages = ["nl-NL", "en-US"]
         request.usesLanguageCorrection = true
         
+        let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
+        
         DispatchQueue.global(qos: .userInitiated).async {
-            try? requestHandler.perform([request])
-        }
-    }
-    
-    // MARK: - Extract Merchant
-    private static func extractMerchant(from lines: [String]) -> String? {
-        let merchants = ["albert heijn", "ah", "jumbo", "lidl", "aldi"]
-        
-        for line in lines.prefix(5) {
-            let lower = line.lowercased()
-            for merchant in merchants {
-                if lower.contains(merchant) {
-                    return line.trimmingCharacters(in: .whitespacesAndNewlines)
-                }
+            do {
+                try handler.perform([request])
+            } catch {
+                print("Failed to perform OCR: \(error)")
+                completion(ReceiptResult())
             }
         }
-        
-        return lines.first
     }
     
-    // MARK: - Extract Date
-    private static func extractDate(from lines: [String]) -> Date? {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "nl_NL")
-        let formats = ["dd-MM-yyyy", "dd/MM/yyyy", "dd-MM-yy"]
-        
-        for line in lines {
-            for format in formats {
-                formatter.dateFormat = format
-                if let date = formatter.date(from: line.trimmingCharacters(in: .whitespaces)) {
-                    return date
-                }
-            }
-        }
-        
-        return nil
-    }
-    
-    // MARK: - Extract Amount (FLEXIBLE)
     private static func extractAmount(from lines: [String]) -> Double? {
-        // Look for keywords - remove ALL spaces to be flexible
-        for line in lines.reversed() {
-            let cleaned = line.lowercased().replacingOccurrences(of: " ", with: "")
+        let totalKeywords = ["totaal", "total", "bedrag", "te betalen", "subtotal", "sum"]
+        
+        for (index, line) in lines.enumerated() {
+            let lowercased = line.lowercased()
             
-            // Check multiple variations
-            if cleaned.contains("tebetalen") ||
-               cleaned.contains("betalen") ||
-               cleaned.contains("apagar") {
-                if let amount = extractNumberFromLine(line) {
-                    return amount
+            if totalKeywords.contains(where: { lowercased.contains($0) }) {
+                for i in index..<min(index + 3, lines.count) {
+                    if let amount = extractNumber(from: lines[i]) {
+                        return amount
+                    }
                 }
             }
         }
         
-        // Try TOTAAL
-        for line in lines.reversed() {
-            let cleaned = line.lowercased().replacingOccurrences(of: " ", with: "")
-            if cleaned.contains("totaal") && !cleaned.contains("subtotaal") {
-                if let amount = extractNumberFromLine(line) {
-                    return amount
-                }
-            }
-        }
-        
-        // Try TOTAL
-        for line in lines.reversed() {
-            let cleaned = line.lowercased().replacingOccurrences(of: " ", with: "")
-            if cleaned.contains("total") && !cleaned.contains("subtotal") {
-                if let amount = extractNumberFromLine(line) {
-                    return amount
-                }
-            }
-        }
-        
-        return nil
-    }
-    
-    // MARK: - Extract Number from Line
-    private static func extractNumberFromLine(_ line: String) -> Double? {
-        var cleaned = line
-            .replacingOccurrences(of: "€", with: "")
-            .replacingOccurrences(of: "EUR", with: "")
-        
-        // Handle European format
-        if cleaned.contains(",") && !cleaned.contains(".") {
-            cleaned = cleaned.replacingOccurrences(of: ",", with: ".")
-        } else if cleaned.contains(".") && cleaned.contains(",") {
-            cleaned = cleaned.replacingOccurrences(of: ".", with: "")
-            cleaned = cleaned.replacingOccurrences(of: ",", with: ".")
-        }
-        
-        // Find all numbers
-        let pattern = "[0-9]+\\.?[0-9]{0,2}"
-        guard let regex = try? NSRegularExpression(pattern: pattern) else {
-            return nil
-        }
-        
-        let range = NSRange(cleaned.startIndex..., in: cleaned)
-        let matches = regex.matches(in: cleaned, range: range)
-        
-        // Get last number (usually the amount)
-        if let lastMatch = matches.last {
-            if let swiftRange = Range(lastMatch.range, in: cleaned) {
-                let numString = String(cleaned[swiftRange])
-                if let num = Double(numString), num >= 0.01 {
-                    return num
-                }
-            }
-        }
-        
-        return nil
-    }
-    
-    // MARK: - Detect BTW Rate
-    private static func detectBTWRate(from lines: [String]) -> Double? {
-        var bCount = 0
+        var amounts: [Double] = []
         for line in lines {
-            if line.hasSuffix(" B") || line.hasSuffix("B") || line.contains(" B ") {
-                bCount += 1
+            if let amount = extractNumber(from: line) {
+                amounts.append(amount)
             }
         }
         
-        if bCount >= 2 {
-            return 0.09
-        }
+        return amounts.max()
+    }
+    
+    private static func extractNumber(from text: String) -> Double? {
+        var cleaned = text
+            .replacingOccurrences(of: "€", with: "")
+            .replacingOccurrences(of: "$", with: "")
+            .replacingOccurrences(of: " ", with: "")
+            .trimmingCharacters(in: .whitespaces)
         
-        let fullText = lines.joined(separator: " ").lowercased()
-        if fullText.contains("21%") {
-            return 0.21
-        }
-        if fullText.contains("9%") {
-            return 0.09
+        cleaned = cleaned.replacingOccurrences(of: ",", with: ".")
+        
+        let pattern = "\\d+\\.?\\d{0,2}"
+        if let range = cleaned.range(of: pattern, options: .regularExpression) {
+            let numberString = String(cleaned[range])
+            return Double(numberString)
         }
         
         return nil
+    }
+    
+    private static func extractMerchant(from lines: [String]) -> String? {
+        for line in lines.prefix(5) {
+            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            if trimmed.count > 3 && !trimmed.contains(where: { $0.isNumber }) {
+                return trimmed
+            }
+        }
+        return nil
+    }
+    
+    private static func suggestCategory(from lines: [String]) -> String? {
+        let allText = lines.joined(separator: " ").lowercased()
+        
+        let categoryMap: [String: [String]] = [
+            "Groceries": ["albert heijn", "jumbo", "lidl", "aldi", "plus", "supermarkt", "grocery"],
+            "Transport": ["ns", "train", "taxi", "uber", "ov", "benzine", "shell", "parking"],
+            "Healthcare": ["apotheek", "pharmacy", "dokter", "hospital", "ziekenhuis", "tandarts"],
+            "Entertainment": ["cinema", "bioscoop", "netflix", "spotify", "museum"],
+            "Clothing": ["h&m", "zara", "fashion", "kleding"],
+            "Travel": ["hotel", "booking", "airbnb", "airline", "vliegtuig"]
+        ]
+        
+        for (category, keywords) in categoryMap {
+            for keyword in keywords {
+                if allText.contains(keyword) {
+                    return category
+                }
+            }
+        }
+        
+        return "Other"
     }
 }
